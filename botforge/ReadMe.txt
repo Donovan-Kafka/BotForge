@@ -13,3 +13,5 @@
 7.change index.tsx to main.tsx.
 
 8.copy index.html at "/botforge/src", to index.html at "/botforge "
+
+9.to run the program, open CMD, Navigate to the project folder, input 'npm run dev'
