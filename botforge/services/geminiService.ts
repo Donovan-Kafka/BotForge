@@ -9,6 +9,6 @@ export const generateBotResponse = async (
   // Simulate network delay (1 second) to make it feel real
   await new Promise(resolve => setTimeout(resolve, 1000));
 
-  // Return a mock response
+
   return `HI`;
 };
