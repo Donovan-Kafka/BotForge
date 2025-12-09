@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bot, LogOut, ShieldAlert, Users, Calendar } from 'lucide-react';
+import { Bot, LogOut, ShieldAlert, Users, Calendar, CreditCard } from 'lucide-react';
 import { UserRole } from '../types';
 
 // Staff Components
@@ -15,6 +15,9 @@ import { CustomizeChatbot as AdminCustomize } from './organisational-admin/Custo
 import { ViewChatHistory as AdminHistory } from './organisational-admin/ViewChatHistory';
 import { SubmitFeedback as AdminFeedback } from './organisational-admin/SubmitFeedback';
 import { ManageAccount as AdminAccount } from './organisational-admin/ManageAccount';
+
+// Shared Components
+import { Payment } from './Payment';
 
 interface DashboardProps {
   onLogout: () => void;
@@ -126,21 +129,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
     </div>
   );
 
-  const renderPlaceholder = (title: string) => (
-    <div className="flex items-center justify-center h-96 bg-white border border-dashed border-gray-300 rounded-xl">
-        <div className="text-center">
-            <Bot className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-bold text-gray-400">{title} Interface</h3>
-            <p className="text-gray-400 text-sm">Feature not available for current role.</p>
-        </div>
-    </div>
-  );
-
   return (
     <div className="flex h-screen bg-white font-sans">
       {/* Left Sidebar (Switch Role & System Admin) */}
       <div className="w-16 bg-white border-r border-gray-200 flex flex-col items-center py-6 gap-6 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-        <div className="bg-blue-600 p-2 rounded-lg mb-4">
+        <div 
+            onClick={() => setActiveTab('analytics')}
+            className="bg-blue-600 p-2 rounded-lg mb-4 cursor-pointer hover:bg-blue-700 transition-colors"
+        >
             <Bot className="h-6 w-6 text-white" />
         </div>
         
@@ -161,6 +157,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
                 Switch to {currentRole === UserRole.ADMIN ? 'Staff' : 'Admin'}
             </div>
         </div>
+
+        {/* Subscription Button (Admin Only) */}
+        {currentRole === UserRole.ADMIN && (
+            <div className="relative group">
+                <button 
+                    onClick={() => setActiveTab('subscription')}
+                    className={`p-3 rounded-xl transition-all ${activeTab === 'subscription' ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-600'}`}
+                >
+                    <CreditCard className="w-5 h-5" />
+                </button>
+                <div className="absolute left-14 top-2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity z-50">
+                    Subscription
+                </div>
+            </div>
+        )}
 
         <div className="mt-auto flex flex-col gap-4">
             <div className="relative group">
@@ -218,62 +229,72 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
             </div>
         </header>
 
-        {/* Navigation Tabs (Pills) */}
-        <div className="px-8 py-6 pb-0 bg-white flex-shrink-0">
-            <div className="flex flex-wrap gap-3">
-                {currentRole === UserRole.ADMIN && (
+        {/* Navigation Tabs (Pills) - Only show if NOT in Subscription mode */}
+        {activeTab !== 'subscription' && (
+            <div className="px-8 py-6 pb-0 bg-white flex-shrink-0">
+                <div className="flex flex-wrap gap-3">
+                    {currentRole === UserRole.ADMIN && (
+                        <button 
+                            onClick={() => setActiveTab('build')}
+                            className={`px-5 py-2 rounded-full text-sm font-medium transition-all border ${activeTab === 'build' ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'}`}
+                        >
+                            Build Chatbot
+                        </button>
+                    )}
+                    
                     <button 
-                        onClick={() => setActiveTab('build')}
-                        className={`px-5 py-2 rounded-full text-sm font-medium transition-all border ${activeTab === 'build' ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'}`}
+                        onClick={() => setActiveTab('customise')}
+                        className={`px-5 py-2 rounded-full text-sm font-medium transition-all border ${activeTab === 'customise' ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'}`}
                     >
-                        Build Chatbot
+                        Customise Chatbot
                     </button>
-                )}
-                
-                <button 
-                    onClick={() => setActiveTab('customise')}
-                    className={`px-5 py-2 rounded-full text-sm font-medium transition-all border ${activeTab === 'customise' ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'}`}
-                >
-                    Customise Chatbot
-                </button>
 
-                <button 
-                    onClick={() => setActiveTab('history')}
-                    className={`px-5 py-2 rounded-full text-sm font-medium transition-all border ${activeTab === 'history' ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'}`}
-                >
-                    View Chat History
-                </button>
-
-                {currentRole === UserRole.ADMIN && (
-                     <button 
-                        onClick={() => setActiveTab('staff')}
-                        className={`px-5 py-2 rounded-full text-sm font-medium transition-all border ${activeTab === 'staff' ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'}`}
+                    <button 
+                        onClick={() => setActiveTab('history')}
+                        className={`px-5 py-2 rounded-full text-sm font-medium transition-all border ${activeTab === 'history' ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'}`}
                     >
-                        Manage Staff
+                        View Chat History
                     </button>
-                )}
 
-                <button 
-                    onClick={() => setActiveTab('feedback')}
-                    className={`px-5 py-2 rounded-full text-sm font-medium transition-all border ${activeTab === 'feedback' ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'}`}
-                >
-                    Submit Feedback
-                </button>
+                    {currentRole === UserRole.ADMIN && (
+                        <button 
+                            onClick={() => setActiveTab('staff')}
+                            className={`px-5 py-2 rounded-full text-sm font-medium transition-all border ${activeTab === 'staff' ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'}`}
+                        >
+                            Manage Staff
+                        </button>
+                    )}
 
-                <button 
-                    onClick={() => setActiveTab('account')}
-                    className={`px-5 py-2 rounded-full text-sm font-medium transition-all border ${activeTab === 'account' ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'}`}
-                >
-                    Manage Account
-                </button>
+                    <button 
+                        onClick={() => setActiveTab('feedback')}
+                        className={`px-5 py-2 rounded-full text-sm font-medium transition-all border ${activeTab === 'feedback' ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'}`}
+                    >
+                        Submit Feedback
+                    </button>
+
+                    <button 
+                        onClick={() => setActiveTab('account')}
+                        className={`px-5 py-2 rounded-full text-sm font-medium transition-all border ${activeTab === 'account' ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'}`}
+                    >
+                        Manage Account
+                    </button>
+                </div>
+                {/* Divider */}
+                <div className="h-px w-full bg-gray-100 mt-6"></div>
             </div>
-            {/* Divider */}
-            <div className="h-px w-full bg-gray-100 mt-6"></div>
-        </div>
+        )}
 
         {/* Content Body */}
         <main className="flex-1 overflow-y-auto p-8 bg-white">
             {activeTab === 'analytics' && renderAnalytics()}
+
+            {/* Subscription Tab (Admin Only) */}
+            {activeTab === 'subscription' && currentRole === UserRole.ADMIN && (
+                <Payment onPaymentSuccess={() => {
+                    alert("Subscription updated successfully!");
+                    setActiveTab('analytics');
+                }} />
+            )}
 
             {/* Admin Specific Tabs */}
             {activeTab === 'build' && currentRole === UserRole.ADMIN && (

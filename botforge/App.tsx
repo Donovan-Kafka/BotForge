@@ -4,7 +4,7 @@ import { LandingPage } from './components/LandingPage';
 import { PricingPage } from './components/PricingPage';
 import { FAQPage } from './components/FAQPage';
 import { Auth } from './components/Auth';
-import { Payment } from './components/Payment';
+// Payment is now imported inside Dashboard, not here
 import { Dashboard } from './components/Dashboard';
 import { SystemAdminDashboard } from './components/SystemAdminDashboard';
 import { PageView } from './types';
@@ -21,12 +21,6 @@ export default function App() {
   const handleLogout = () => {
     setIsLoggedIn(false);
     setCurrentPage(PageView.LOGIN);
-  };
-
-  const handlePaymentSuccess = () => {
-    // In a real app, this would verify payment then log the user in
-    setIsLoggedIn(true);
-    setCurrentPage(PageView.DASHBOARD);
   };
 
   return (
@@ -57,7 +51,7 @@ export default function App() {
             />
           )}
 
-          {currentPage === PageView.PAYMENT && <Payment onPaymentSuccess={handlePaymentSuccess} />}
+          {/* Payment page removed from here as it is now inside the Dashboard */}
           
           {currentPage === PageView.DASHBOARD && isLoggedIn && (
             <Dashboard 
