@@ -12,6 +12,7 @@ import { ManageAccount as StaffAccount } from './staff/ManageAccount';
 // Organisational Admin Components
 import { BuildChatbot } from './organisational-admin/BuildChatbot';
 import { ManageStaff } from './organisational-admin/ManageStaff';
+import { CreateRole } from './organisational-admin/CreateRole';
 import { CustomizeChatbot as AdminCustomize } from './organisational-admin/CustomizeChatbot';
 import { ViewChatHistory as AdminHistory } from './organisational-admin/ViewChatHistory';
 import { SubmitFeedback as AdminFeedback } from './organisational-admin/SubmitFeedback';
@@ -235,7 +236,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
         </header>
 
         {/* Navigation Tabs (Pills) - Only show if NOT in Subscription or Notifications mode */}
-        {activeTab !== 'subscription' && activeTab !== 'notifications' && (
+        {activeTab !== 'subscription' && activeTab !== 'notifications' && activeTab !== 'create-role' && (
             <div className="px-8 py-6 pb-0 bg-white flex-shrink-0">
                 <div className="flex flex-wrap gap-3">
                     {currentRole === UserRole.ADMIN && (
@@ -312,7 +313,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
             )}
 
             {activeTab === 'staff' && currentRole === UserRole.ADMIN && (
-                <ManageStaff onBack={() => setActiveTab('analytics')} onCreateRole={() => {}} />
+                <ManageStaff onBack={() => setActiveTab('analytics')} onCreateRole={() => setActiveTab('create-role')} />
+            )}
+
+            {activeTab === 'create-role' && currentRole === UserRole.ADMIN && (
+                <CreateRole onBack={() => setActiveTab('staff')} />
             )}
             
             {/* Shared Tabs (Customise) */}
