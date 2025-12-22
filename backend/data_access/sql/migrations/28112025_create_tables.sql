@@ -1,4 +1,4 @@
--- sample 1
+-- before prof meeting and erd changes
 
 CREATE TABLE Personality (
     personalityId INT AUTO_INCREMENT PRIMARY KEY,
