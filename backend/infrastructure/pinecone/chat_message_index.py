@@ -1,6 +1,6 @@
 from bson import ObjectId
 from datetime import datetime
-from backend.data_access.vector.pinecone_client import index, embed_text
+from backend.infrastructure.pinecone.pinecone_client import index, embed_text
 
 # store embedded messages, free version probably up to 1 million vectors
 def upsert_chat_message(
