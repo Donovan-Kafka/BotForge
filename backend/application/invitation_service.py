@@ -81,11 +81,6 @@ def validate_invitation_token(token: str) -> dict:
     }
 
 def accept_invitation_and_create_operator(payload: dict) -> dict:
-    """
-    Operator signs up using invite token.
-    Creates app_user with role_id=2 and organisation_id from invitation.
-    Marks invitation as accepted.
-    """
     token = (payload.get("token") or "").strip()
     username = (payload.get("username") or "").strip()
     password_hash = payload.get("password_hash")  # 

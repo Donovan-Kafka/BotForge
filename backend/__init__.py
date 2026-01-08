@@ -21,12 +21,12 @@ def create_app():
 
     from backend.presentation.routes.unregisteredAPI import unregistered_bp
     from backend.presentation.routes.adminAPI import admin_bp
-    from backend.presentation.routes.operatorInviteAPI import operator_invite_bp
+    from backend.presentation.routes.operatorAPI import operator_bp
     from backend.presentation.routes.sysAdminAPI import sysadmin_bp
 
     app.register_blueprint(unregistered_bp, url_prefix="/api/public")
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
-    app.register_blueprint(operator_invite_bp, url_prefix="/api/public")
+    app.register_blueprint(operator_bp, url_prefix="/api/public")
     app.register_blueprint(sysadmin_bp, url_prefix="/api/sysadmin")
 
     @app.get("/health")
