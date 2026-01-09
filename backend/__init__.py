@@ -1,9 +1,11 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
 from dotenv import load_dotenv
 import os
 
 db = SQLAlchemy()
+cors = CORS()
 
 def create_app():
     load_dotenv()
@@ -18,6 +20,7 @@ def create_app():
         raise RuntimeError("DATABASE_URL not set in .env")
 
     db.init_app(app)
+    cors.init_app(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "https://fyp-three-sage.vercel.app", "http://localhost:3000"]}})
 
     from backend.presentation.routes.unregisteredAPI import unregistered_bp
     from backend.presentation.routes.adminAPI import admin_bp

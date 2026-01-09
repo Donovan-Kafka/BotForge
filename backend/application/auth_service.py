@@ -60,6 +60,10 @@ def register_org_admin(payload: dict) -> dict:
         return {"ok": False, "error": "Registration failed (duplicate or invalid data)."}
 
     token = generate_verify_token(user.user_id, user.email)
+    
+    # Print token to console 
+    print(f"\n[DEBUG] Verification Link: http://localhost:3000?token={token}\n")
+
     return {
         "ok": True,
         "message": "Registered. Please verify your email.",
@@ -98,10 +102,17 @@ def login(payload: dict) -> dict:
     ).first()
 
     if not user:
+        print(f"[DEBUG] Login failed: User '{identifier}' not found.")
         return {"ok": False, "error": "Invalid credentials."}
+    
+    print(f"[DEBUG] User found: {user.username} (ID: {user.user_id}, Status: {user.status})")
+
     if not user.status:
+        print("[DEBUG] Login failed: Email not verified.")
         return {"ok": False, "error": "Email not verified."}
+    
     if not check_password_hash(user.password, password):
+        print("[DEBUG] Login failed: Password hash mismatch.")
         return {"ok": False, "error": "Invalid credentials."}
 
     return {
