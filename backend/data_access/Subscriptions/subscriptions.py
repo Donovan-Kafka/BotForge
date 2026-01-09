@@ -1,5 +1,3 @@
-# backend/data_access/subscriptions/subscription_repository.py
-
 from backend import db
 from backend.models import Subscription
 

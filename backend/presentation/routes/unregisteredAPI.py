@@ -114,15 +114,4 @@ def get_testimonials():
 
     return jsonify({"ok": True, "testimonials": testimonials}), 200
 
-# for landing page's pricing section
-@unregistered_bp.get("/subscriptions/active")
-def active_subscriptions():
-    """
-    GET /subscriptions/active
-    Returns active subscription plans for the landing page.
-    """
-    subscription_repo = SubscriptionRepository()
-    get_active_subscriptions = GetActiveSubscriptions(subscription_repo)
 
-    result = get_active_subscriptions.execute()
-    return jsonify(result), 200
