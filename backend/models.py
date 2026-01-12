@@ -46,6 +46,7 @@ class SubscriptionFeature(db.Model):
 
     subscription_id = db.Column(db.Integer, db.ForeignKey("subscription.subscription_id"), primary_key=True)
     feature_id = db.Column(db.Integer, db.ForeignKey("feature.feature_id"), primary_key=True)
+    display_order = db.Column(db.SmallInteger)
 
 class Feature(db.Model):
     __tablename__ = "feature"

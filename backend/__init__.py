@@ -23,14 +23,18 @@ def create_app():
     cors.init_app(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "https://fyp-three-sage.vercel.app", "http://localhost:3000"]}})
 
     from backend.presentation.routes.unregisteredAPI import unregistered_bp
+    from backend.presentation.routes.faqAPI import faq_bp
     from backend.presentation.routes.adminAPI import admin_bp
     from backend.presentation.routes.operatorAPI import operator_bp
     from backend.presentation.routes.sysAdminAPI import sysadmin_bp
+    from backend.presentation.routes.featuresAPI import features_bp
 
     app.register_blueprint(unregistered_bp, url_prefix="/api/public")
+    app.register_blueprint(faq_bp, url_prefix="/api/public")
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
     app.register_blueprint(operator_bp, url_prefix="/api/public")
     app.register_blueprint(sysadmin_bp, url_prefix="/api/sysadmin")
+    app.register_blueprint(features_bp, url_prefix="/api")
 
     @app.get("/health")
     def health():

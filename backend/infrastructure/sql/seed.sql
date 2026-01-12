@@ -28,22 +28,31 @@ INSERT INTO subscription (name, price, status, description) VALUES
 ('Pro', 25.00, 0, '1500 conversations/month. Ideal for growing businesses. Includes enhanced analytics.'),
 ('Deluxe', 50.00, 0, '5000 conversations/month. Designed for large organizations. Full access to premium & enterprise features.');
 
--- Insert features
+-- Insert features (matches landing page cards)
 INSERT INTO feature (name, description) VALUES
-('Analytics', 'Access to analytics dashboard'),
-('Chatbot Integration', 'Connect chatbot to website'),
-('Notifications', 'Receive email notifications');
+('Analyze', 'Gain deep insights into customer conversations with real-time analytics.'),
+('Train', 'Continuously improve your bot with smart, adaptive learning workflows.'),
+('Customize', 'Easily tailor every aspect of your chatbot to match your brand.');
 
 -- Link subscriptions to features
-INSERT INTO subscription_features (subscription_id, feature_id) VALUES
-(1, 1),
-(1, 3),
-(2, 1),
-(2, 2),
-(2, 3),
-(3, 1),
-(3, 2),
-(3, 3);
+-- display_order defines landing page order (1 = left, 3 = right)
+-- Standard
+INSERT INTO subscription_features (subscription_id, feature_id, display_order) VALUES
+(1, 1, 1), -- Analyze
+(1, 2, 2), -- Train
+(1, 3, 3); -- Customize
+
+-- Pro
+INSERT INTO subscription_features (subscription_id, feature_id, display_order) VALUES
+(2, 1, 1),
+(2, 2, 2),
+(2, 3, 3);
+
+-- Deluxe
+INSERT INTO subscription_features (subscription_id, feature_id, display_order) VALUES
+(3, 1, 1),
+(3, 2, 2),
+(3, 3, 3);
 
 -- Insert organisations
 INSERT INTO organisation (name, industry, size, subscription_id) VALUES

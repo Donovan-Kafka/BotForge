@@ -1,9 +1,11 @@
 -- SQL Schema for PostgreSQL
 
+DROP TABLE IF EXISTS featured_video CASCADE;
 DROP TABLE IF EXISTS analytics CASCADE;
 DROP TABLE IF EXISTS chatbot CASCADE;
 DROP TABLE IF EXISTS feedback CASCADE;
 DROP TABLE IF EXISTS notification CASCADE;
+DROP TABLE IF EXISTS faq CASCADE;
 DROP TABLE IF EXISTS invitation CASCADE;
 DROP TABLE IF EXISTS app_user CASCADE;
 DROP TABLE IF EXISTS personality CASCADE;
@@ -36,9 +38,11 @@ CREATE TABLE feature (
 CREATE TABLE subscription_features (
     subscription_id INT NOT NULL,
     feature_id INT NOT NULL,
+    display_order SMALLINT, -- 1, 2, 3 = shown on landing page
     PRIMARY KEY (subscription_id, feature_id),
     FOREIGN KEY (subscription_id) REFERENCES subscription(subscription_id),
-    FOREIGN KEY (feature_id) REFERENCES feature(feature_id)
+    FOREIGN KEY (feature_id) REFERENCES feature(feature_id),
+    CHECK (display_order IS NULL OR display_order BETWEEN 1 AND 3)
 );
 
 CREATE TABLE organisation (
@@ -150,4 +154,12 @@ CREATE TABLE analytics (
     top_intents TEXT,
     FOREIGN KEY (bot_id) REFERENCES chatbot(bot_id),
     UNIQUE (bot_id, date)
+);
+
+CREATE TABLE featured_video (
+    id SMALLINT PRIMARY KEY CHECK (id = 1),
+    url VARCHAR(255),
+    title VARCHAR(100),
+    description VARCHAR(255),
+    updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

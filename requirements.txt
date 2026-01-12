@@ -9,3 +9,4 @@ typing-extensions==4.15.0
 pinecone==8.0.0
 openai==2.14.0
 psycopg2-binary==2.9.11
+flask-cors==6.0.2
