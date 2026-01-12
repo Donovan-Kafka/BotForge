@@ -53,3 +53,12 @@ export const authService = {
         return api.get(`/api/public/verify-email?token=${token}`);
     },
 };
+
+export const companyService = {
+    async createProfile(formData: FormData) {
+        // Use the new multipart helper
+        // Note: Check your backend route prefix. Based on your unregisteredAPI.py, it might be /unregistered or similar.
+        // Assuming the blueprint is registered at /api/unregistered or similar:
+        return api.postMultipart('/unregistered/organisation/profile', formData);
+    }
+};
