@@ -53,3 +53,5 @@ export const authService = {
         return api.get(`/api/public/verify-email?token=${token}`);
     },
 };
+
+
