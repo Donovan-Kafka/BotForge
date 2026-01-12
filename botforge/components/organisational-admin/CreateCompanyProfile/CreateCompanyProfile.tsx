@@ -1,31 +1,72 @@
-import React, { useState, ChangeEvent, FormEvent } from 'react';
-import './CreateCompanyProfile.css'; // Updated to match the new CSS filename
-
-interface FormData {
-  company: string;
-  industry: string;
-  size: string;
-}
+import React, { useState, ChangeEvent, FormEvent, useRef } from 'react';
+import './CreateCompanyProfile.css';
 
 const CreateCompanyProfile: React.FC = () => {
-  const [formData, setFormData] = useState<FormData>({
-    company: '',
-    industry: 'f&b',
-    size: '11-50',
-  });
+  // 1. 定义基本的表单状态
+  const [companyName, setCompanyName] = useState('');
+  const [industry, setIndustry] = useState('f&b');
+  const [size, setSize] = useState('11-50');
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  // 2. 定义文件相关的状态
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // 3. 创建一个引用 (Ref) 来控制隐藏的 input 标签
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 处理文件选择
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setLogoFile(file);
+      // 生成预览图 URL
+      setPreviewUrl(URL.createObjectURL(file));
+    }
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  // 点击 "Upload file" 按钮时，触发隐藏 input 的点击
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  // 提交表单给后端
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    console.log('Company Profile Submitted:', formData);
-    // Add logic to save company profile here
+
+    // --- 关键步骤：准备发送给后端的数据 ---
+    // 使用 FormData 对象，它是处理文件上传的标准方式
+    const formData = new FormData();
+    formData.append('company', companyName);
+    formData.append('industry', industry);
+    formData.append('size', size);
+    
+    if (logoFile) {
+      // 'logo' 是后端接收文件时需要的参数名 (比如 Java Controller 里的 @RequestParam("logo"))
+      formData.append('logo', logoFile); 
+    }
+
+    // --- 打印出来检查一下 (调试用) ---
+    console.log('准备发送的数据:');
+    for (const [key, value] of formData.entries()) {
+      console.log(`${key}:`, value);
+    }
+
+    // --- 这里写对接后端的代码 (示例) ---
+    /*
+    try {
+      const response = await fetch('http://your-backend-api.com/api/company/create', {
+        method: 'POST',
+        body: formData, // 注意：上传文件时不需要设置 Content-Type header，浏览器会自动设置
+      });
+      
+      if (response.ok) {
+        alert('创建成功！');
+        // 跳转到下一步
+      }
+    } catch (error) {
+      console.error('上传失败', error);
+    }
+    */
   };
 
   return (
@@ -33,52 +74,28 @@ const CreateCompanyProfile: React.FC = () => {
       <header>
         <div className="logo-container">
           <div className="logo-icon">
-             {/* Make sure to put your logo in the public folder or import it */}
             <img src="/1.png" alt="BotForge Logo" />
           </div>
           <span>BotForge</span>
         </div>
-
-        <div className="user-menu">
-          <div className="notification-icon">
-            <div className="notification-dot"></div>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-            </svg>
-          </div>
-
-          <div className="user-info">
-            <div className="user-text">
-              <div className="user-name">Hi, Robby</div>
-              <div className="user-role">Org Admin</div>
-            </div>
-            <div className="avatar">R</div>
-          </div>
-
-          <a href="#" className="logout-link">
-            Logout
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-              <polyline points="16 17 21 12 16 7"></polyline>
-              <line x1="21" y1="12" x2="9" y2="12"></line>
-            </svg>
-          </a>
-        </div>
+        
+        {/* 右上角的 Hardcode 用户信息已被移除 */}
+        <div></div> 
       </header>
 
       <main>
         <h1>Set up your account</h1>
 
         <form className="setup-form" onSubmit={handleSubmit}>
+          
           <div className="form-group">
             <label htmlFor="company">Company:</label>
             <input
               type="text"
               id="company"
-              name="company"
-              value={formData.company}
-              onChange={handleChange}
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              required // 必填
             />
           </div>
 
@@ -86,9 +103,8 @@ const CreateCompanyProfile: React.FC = () => {
             <label htmlFor="industry">Industry:</label>
             <select
               id="industry"
-              name="industry"
-              value={formData.industry}
-              onChange={handleChange}
+              value={industry}
+              onChange={(e) => setIndustry(e.target.value)}
             >
               <option value="f&b">F&B</option>
               <option value="tech">Technology</option>
@@ -100,9 +116,8 @@ const CreateCompanyProfile: React.FC = () => {
             <label htmlFor="size">Company Size:</label>
             <select
               id="size"
-              name="size"
-              value={formData.size}
-              onChange={handleChange}
+              value={size}
+              onChange={(e) => setSize(e.target.value)}
             >
               <option value="1-10">1-10</option>
               <option value="11-50">11-50</option>
@@ -113,14 +128,34 @@ const CreateCompanyProfile: React.FC = () => {
 
           <div className="form-group">
             <label>Company Logo:</label>
+            
+            {/* 这个 input 是隐藏的，真正的功能全靠下面的 div 触发 */}
+            <input 
+              type="file" 
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              style={{ display: 'none' }} 
+              accept="image/*" // 只允许选图片
+            />
+
             <div className="upload-container">
-              <div className="upload-icon">
-                <svg viewBox="0 0 24 24">
-                  <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
-                </svg>
-              </div>
-              <button type="button" className="upload-btn">
-                Upload file
+              {previewUrl ? (
+                // 如果选了图，显示预览图
+                <div className="preview-box">
+                    <img src={previewUrl} alt="Logo Preview" className="preview-image" />
+                </div>
+              ) : (
+                // 如果没选图，显示原来的图标
+                <div className="upload-icon">
+                    <svg viewBox="0 0 24 24">
+                    <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
+                    </svg>
+                </div>
+              )}
+              
+              {/* 点击这个按钮会触发上面的 hidden input */}
+              <button type="button" className="upload-btn" onClick={handleUploadClick}>
+                {previewUrl ? 'Change File' : 'Upload file'}
               </button>
             </div>
           </div>
