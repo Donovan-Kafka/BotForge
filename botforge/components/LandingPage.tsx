@@ -1,12 +1,25 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageView, Testimonial } from '../types';
 import { Search, RotateCw, Settings, Play } from 'lucide-react';
+import { featureService } from '../api';
 
 interface LandingPageProps {
   onNavigate: (page: PageView) => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
+  const [features, setFeatures] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchFeatures = async () => {
+      // Default to subscription_id 1 for generic landing page features
+      const response = await featureService.getFeatures(1);
+      if (response.features) {
+        setFeatures(response.features);
+      }
+    };
+    fetchFeatures();
+  }, []);
 
   const testimonials: Testimonial[] = [
     {
@@ -74,38 +87,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {/* Analyze */}
-            <div className="bg-blue-100/50 p-8 rounded-lg border border-blue-200 hover:shadow-lg transition-shadow">
-              <div className="bg-white w-12 h-12 rounded-lg flex items-center justify-center mb-6 shadow-sm">
-                <Search className="h-6 w-6 text-gray-900" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Analyze</h3>
-              <p className="text-gray-600 text-sm leading-relaxed">
-                Gain deep insights into customer conversations with real-time analytics.
-              </p>
-            </div>
+            {features.map((feature) => {
+              let Icon = Search;
+              if (feature.name.includes("Train")) Icon = RotateCw;
+              if (feature.name.includes("Customize")) Icon = Settings;
 
-            {/* Train */}
-            <div className="bg-blue-100/50 p-8 rounded-lg border border-blue-200 hover:shadow-lg transition-shadow">
-              <div className="bg-white w-12 h-12 rounded-lg flex items-center justify-center mb-6 shadow-sm">
-                <RotateCw className="h-6 w-6 text-gray-900" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Train</h3>
-              <p className="text-gray-600 text-sm leading-relaxed">
-                Continuously improve your bot with smart, adaptive learning workflows.
-              </p>
-            </div>
-
-            {/* Customize */}
-            <div className="bg-blue-100/50 p-8 rounded-lg border border-blue-200 hover:shadow-lg transition-shadow">
-              <div className="bg-white w-12 h-12 rounded-lg flex items-center justify-center mb-6 shadow-sm">
-                <Settings className="h-6 w-6 text-gray-900" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Customize</h3>
-              <p className="text-gray-600 text-sm leading-relaxed">
-                Easily tailor every aspect of your chatbot to match your brand identity.
-              </p>
-            </div>
+              return (
+                <div key={feature.id} className="bg-blue-100/50 p-8 rounded-lg border border-blue-200 hover:shadow-lg transition-shadow">
+                  <div className="bg-white w-12 h-12 rounded-lg flex items-center justify-center mb-6 shadow-sm">
+                    <Icon className="h-6 w-6 text-gray-900" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">{feature.name}</h3>
+                  <p className="text-gray-600 text-sm leading-relaxed">
+                    {feature.description}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

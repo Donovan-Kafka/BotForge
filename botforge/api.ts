@@ -60,4 +60,10 @@ export const faqService = {
     }
 };
 
+export const featureService = {
+    async getFeatures(subscriptionId: number) {
+        return api.get<any>(`/api/features/highlighted?subscription_id=${subscriptionId}`);
+    }
+};
+
 
