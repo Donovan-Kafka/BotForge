@@ -7,6 +7,7 @@ interface LandingPageProps {
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
+
   const testimonials: Testimonial[] = [
     {
       quote: "The results we have seen with BotForge are groundbreaking, double-digit gains in engagement and resolution rates.",
@@ -26,15 +27,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
       <div className="bg-slate-500 relative overflow-hidden">
         {/* Abstract background elements if needed, keeping it simple to match wireframe style */}
         <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-500 opacity-90 z-0"></div>
-        
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="rounded-xl overflow-hidden shadow-2xl border-4 border-white/20">
-               <img 
-                 src="https://picsum.photos/800/600?grayscale" 
-                 alt="BotForge Dashboard" 
-                 className="w-full h-auto object-cover"
-               />
+              <img
+                src="https://picsum.photos/800/600?grayscale"
+                alt="BotForge Dashboard"
+                className="w-full h-auto object-cover"
+              />
             </div>
             <div className="text-white space-y-6">
               <h1 className="text-4xl md:text-5xl font-bold leading-tight">
@@ -43,7 +44,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               <p className="text-blue-100 text-lg">
                 Build, train, and deploy intelligent agents in minutes. No coding required.
               </p>
-              <button 
+              <button
                 onClick={() => onNavigate(PageView.REGISTER)}
                 className="bg-white text-blue-600 hover:bg-gray-100 font-semibold py-3 px-8 rounded shadow-lg transition-all transform hover:scale-105"
               >
@@ -64,12 +65,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
           {/* Video Placeholder */}
           <div className="max-w-4xl mx-auto mb-20 bg-black rounded-lg aspect-video flex items-center justify-center relative shadow-2xl">
-             <div className="absolute inset-0 flex items-center justify-center">
-                <div className="bg-white/20 p-6 rounded-full backdrop-blur-sm cursor-pointer hover:bg-white/30 transition-all">
-                  <Play className="h-12 w-12 text-white fill-white" />
-                </div>
-             </div>
-             <span className="absolute bottom-4 right-4 text-white font-mono bg-black/50 px-2 py-1 rounded">6:34 AM</span>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="bg-white/20 p-6 rounded-full backdrop-blur-sm cursor-pointer hover:bg-white/30 transition-all">
+                <Play className="h-12 w-12 text-white fill-white" />
+              </div>
+            </div>
+            <span className="absolute bottom-4 right-4 text-white font-mono bg-black/50 px-2 py-1 rounded">6:34 AM</span>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
@@ -113,7 +114,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
       <div id="testimonials" className="bg-gray-50 py-20 border-t border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-4xl font-bold text-gray-900 text-center mb-16">Testimonials</h2>
-          
+
           <div className="grid md:grid-cols-2 gap-8">
             {testimonials.map((t, i) => (
               <div key={i} className="bg-gray-100 p-8 rounded border border-gray-300 relative">

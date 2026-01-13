@@ -9,13 +9,20 @@ export enum PageView {
   PAYMENT = 'PAYMENT',
   DASHBOARD = 'DASHBOARD',
   SYSTEM_ADMIN = 'SYSTEM_ADMIN'
-  CREATE_COMPANY_PROFILE = 'CREATE_COMPANY_PROFILE'
 }
 
 export enum UserRole {
   GUEST = 'GUEST',
   ADMIN = 'ADMIN',
   STAFF = 'STAFF'
+}
+
+export interface User {
+  user_id: number;
+  username: string;
+  email: string;
+  role_id: number;
+  organisation_id: number;
 }
 
 export interface Testimonial {
@@ -29,4 +36,12 @@ export interface PricingPlan {
   price: number;
   features: string[];
   recommended?: boolean;
+}
+
+export interface FAQ {
+  faq_id: number;
+  question: string;
+  answer: string;
+  status: number;
+  display_order: number;
 }
