@@ -38,6 +38,37 @@ export const api = {
             return { ok: false, error: 'Network error or server unreachable' };
         }
     },
+
+    async put<T>(endpoint: string, data: any): Promise<ApiResponse<T>> {
+        try {
+            const response = await fetch(`${API_URL}${endpoint}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('API Error:', error);
+            return { ok: false, error: 'Network error or server unreachable' };
+        }
+    },
+
+    async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
+        try {
+            const response = await fetch(`${API_URL}${endpoint}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('API Error:', error);
+            return { ok: false, error: 'Network error or server unreachable' };
+        }
+    },
 };
 
 export const authService = {
@@ -66,4 +97,39 @@ export const featureService = {
     }
 };
 
+export const sysAdminService = {
+    // Feature Management
+    async listFeatures() {
+        return api.get<any>('/api/sysadmin/features');
+    },
+
+    async createFeature(data: { name: string; description: string }) {
+        return api.post<any>('/api/sysadmin/features', data);
+    },
+
+    async updateFeature(featureId: number, data: { name?: string; description?: string }) {
+        return api.put<any>(`/api/sysadmin/features/${featureId}`, data);
+    },
+
+    async deleteFeature(featureId: number) {
+        return api.delete<any>(`/api/sysadmin/features/${featureId}`);
+    },
+
+    // FAQ Management
+    async listFaqs() {
+        return api.get<any>('/api/sysadmin/faq');
+    },
+
+    async createFaq(data: { question: string; answer: string; display_order: number; status: number; user_id: number }) {
+        return api.post<any>('/api/sysadmin/faq', data);
+    },
+
+    async updateFaq(faqId: number, data: { question?: string; answer?: string; display_order?: number; status?: number; user_id?: number }) {
+        return api.put<any>(`/api/sysadmin/faq/${faqId}`, data);
+    },
+
+    async deleteFaq(faqId: number) {
+        return api.delete<any>(`/api/sysadmin/faq/${faqId}`);
+    }
+};
 
