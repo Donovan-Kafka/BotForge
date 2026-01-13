@@ -28,6 +28,7 @@ def create_app():
     from backend.presentation.routes.operatorAPI import operator_bp
     from backend.presentation.routes.sysAdminAPI import sysadmin_bp
     from backend.presentation.routes.featuresAPI import features_bp
+    from backend.presentation.routes.feedbackAPI import feedback_bp
 
     app.register_blueprint(unregistered_bp, url_prefix="/api/public")
     app.register_blueprint(faq_bp, url_prefix="/api/public")
@@ -35,6 +36,7 @@ def create_app():
     app.register_blueprint(operator_bp, url_prefix="/api/public")
     app.register_blueprint(sysadmin_bp, url_prefix="/api/sysadmin")
     app.register_blueprint(features_bp, url_prefix="/api")
+    app.register_blueprint(feedback_bp, url_prefix="/api")
 
     @app.get("/health")
     def health():
