@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from backend.models import Feedback, AppUser
+from backend.models import Feedback, AppUser, Feature
 from backend import db
 
 sysadmin_bp = Blueprint("sysadmin", __name__)
@@ -60,3 +60,93 @@ def feature_feedback():
         "feedback_id": fb.feedback_id,
         "is_testimonial": fb.is_testimonial
     }), 200
+
+@sysadmin_bp.get("/features")
+def list_features():
+    features = Feature.query.order_by(Feature.feature_id.asc()).all()
+    return jsonify({
+        "ok": True,
+        "features": [
+            {
+                "feature_id": f.feature_id,
+                "name": f.name,
+                "description": f.description
+            } for f in features
+        ]
+    }), 200
+
+
+@sysadmin_bp.post("/features")
+def create_feature():
+    payload = request.get_json(force=True) or {}
+    name = (payload.get("name") or "").strip()
+    description = (payload.get("description") or "").strip()
+
+    if not name:
+        return jsonify({"ok": False, "error": "Feature name is required."}), 400
+    if len(name) > 50:
+        return jsonify({"ok": False, "error": "Feature name max length is 50."}), 400
+    if description and len(description) > 255:
+        return jsonify({"ok": False, "error": "Description max length is 255."}), 400
+
+    feature = Feature(name=name, description=description or None)
+    db.session.add(feature)
+    db.session.commit()
+
+    return jsonify({
+        "ok": True,
+        "message": "Feature created.",
+        "feature": {
+            "feature_id": feature.feature_id,
+            "name": feature.name,
+            "description": feature.description
+        }
+    }), 201
+
+
+@sysadmin_bp.put("/features/<int:feature_id>")
+def update_feature(feature_id):
+    payload = request.get_json(force=True) or {}
+
+    feature = Feature.query.get(feature_id)
+    if not feature:
+        return jsonify({"ok": False, "error": "Feature not found."}), 404
+
+    # Allow partial updates via PUT (simple)
+    if "name" in payload:
+        name = (payload.get("name") or "").strip()
+        if not name:
+            return jsonify({"ok": False, "error": "Feature name cannot be empty."}), 400
+        if len(name) > 50:
+            return jsonify({"ok": False, "error": "Feature name max length is 50."}), 400
+        feature.name = name
+
+    if "description" in payload:
+        description = (payload.get("description") or "").strip()
+        if description and len(description) > 255:
+            return jsonify({"ok": False, "error": "Description max length is 255."}), 400
+        feature.description = description or None
+
+    db.session.commit()
+
+    return jsonify({
+        "ok": True,
+        "message": "Feature updated.",
+        "feature": {
+            "feature_id": feature.feature_id,
+            "name": feature.name,
+            "description": feature.description
+        }
+    }), 200
+
+
+@sysadmin_bp.delete("/features/<int:feature_id>")
+def delete_feature(feature_id):
+    feature = Feature.query.get(feature_id)
+    if not feature:
+        return jsonify({"ok": False, "error": "Feature not found."}), 404
+
+    db.session.delete(feature)
+    db.session.commit()
+
+    return jsonify({"ok": True, "message": "Feature deleted."}), 200
