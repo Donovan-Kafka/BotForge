@@ -7,13 +7,14 @@ import { Auth } from './components/Auth';
 // Payment is now imported inside Dashboard, not here
 import { Dashboard } from './components/Dashboard';
 import { SystemAdminDashboard } from './components/SystemAdminDashboard';
-import { PageView } from './types';
+import { PageView, User } from './types';
 
 import { authService } from './api';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<PageView>(PageView.LANDING);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const isLoggedIn = !!user;
 
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -35,13 +36,18 @@ export default function App() {
     }
   }, []);
 
-  const handleLoginSuccess = () => {
-    setIsLoggedIn(true);
-    setCurrentPage(PageView.DASHBOARD);
+  const handleLoginSuccess = (user: User) => {
+    setUser(user);
+    const isAdmin = user.username === 'SystemAdmin' || user.role_id === 0;
+    if (isAdmin) {
+      setCurrentPage(PageView.SYSTEM_ADMIN);
+    } else {
+      setCurrentPage(PageView.DASHBOARD);
+    }
   };
 
   const handleLogout = () => {
-    setIsLoggedIn(false);
+    setUser(null);
     setCurrentPage(PageView.LOGIN);
   };
 
@@ -60,7 +66,7 @@ export default function App() {
           onLogout={handleLogout}
         >
           {currentPage === PageView.LANDING && <LandingPage onNavigate={setCurrentPage} />}
-          {currentPage === PageView.PRICING && <PricingPage onNavigate={setCurrentPage} />}
+          {currentPage === PageView.PRICING && <PricingPage onNavigate={setCurrentPage} user={user} />}
           {currentPage === PageView.FAQ && <FAQPage />}
 
           {(currentPage === PageView.LOGIN ||
@@ -79,6 +85,7 @@ export default function App() {
             <Dashboard
               onLogout={handleLogout}
               onSystemAdminLogin={() => setCurrentPage(PageView.SYSTEM_ADMIN)}
+              user={user}
             />
           )}
         </Layout>

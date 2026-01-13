@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { PageView } from '../types';
+import { PageView, User } from '../types';
 import { Bot, AlertCircle, Loader2 } from 'lucide-react';
 import { authService } from '../api';
 
 interface AuthProps {
   view: PageView;
   onNavigate: (page: PageView) => void;
-  onLoginSuccess: () => void;
+  onLoginSuccess: (user: User) => void;
 }
 
 export const Auth: React.FC<AuthProps> = ({ view, onNavigate, onLoginSuccess }) => {
@@ -39,10 +39,8 @@ export const Auth: React.FC<AuthProps> = ({ view, onNavigate, onLoginSuccess }) 
         identifier: formData.username // Send both or map to identifier
       });
 
-      if (res.ok) {
-        // Store token if your backend returns one, e.g.:
-        // localStorage.setItem('token', res.token);
-        onLoginSuccess();
+      if (res.ok && res.user) {
+        onLoginSuccess(res.user);
       } else {
         setError(res.error || 'Login failed');
       }

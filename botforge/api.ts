@@ -54,4 +54,10 @@ export const authService = {
     },
 };
 
+export const faqService = {
+    async listFaqs() {
+        return api.get<any>('/api/public/faq');
+    }
+};
+
 
