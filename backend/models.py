@@ -11,26 +11,48 @@ class Organisation(db.Model):
     size = db.Column(db.String(20))
     subscription_id = db.Column(db.Integer, db.ForeignKey("subscription.subscription_id"))
 
+class OrgRole(db.Model):
+    __tablename__ = "org_role"
+
+    org_role_id = db.Column(db.Integer, primary_key=True)
+    organisation_id = db.Column(db.Integer, db.ForeignKey("organisation.organisation_id"), nullable=False)
+    name = db.Column(db.String(50), nullable=False)
+    description = db.Column(db.String(255))
+
+    __table_args__ = (
+        db.UniqueConstraint("organisation_id", "name", name="uq_org_role_name"), )
+
+class OrgPermission(db.Model):
+    __tablename__ = "org_permission"
+
+    org_permission_id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(50), nullable=False, unique=True)
+    description = db.Column(db.String(255))
+
+class OrgRolePermission(db.Model):
+    __tablename__ = "org_role_permission"
+
+    org_role_id = db.Column(db.Integer, db.ForeignKey("org_role.org_role_id"), primary_key=True)
+    org_permission_id = db.Column(db.Integer, db.ForeignKey("org_permission.org_permission_id"), primary_key=True)
 
 class AppUser(db.Model):
     __tablename__ = "app_user"
 
     user_id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), nullable=False, unique=True)
-    password = db.Column(db.String(255), nullable=False)   # store HASH
+    password = db.Column(db.String(255), nullable=False)
     email = db.Column(db.String(100), nullable=False, unique=True)
-    status = db.Column(db.Boolean, default=False)          # false = not verified
-    role_id = db.Column(db.Integer, db.ForeignKey("role.role_id"), nullable=False)
+    status = db.Column(db.Boolean, default=False)
+    system_role_id = db.Column(db.Integer, db.ForeignKey("system_role.system_role_id"), nullable=False)
+    org_role_id = db.Column(db.Integer, db.ForeignKey("org_role.org_role_id"))
     organisation_id = db.Column(db.Integer, db.ForeignKey("organisation.organisation_id"))
 
+class SystemRole(db.Model):
+    __tablename__ = "system_role"
 
-class Role(db.Model):
-    __tablename__ = "role"
-
-    role_id = db.Column(db.Integer, primary_key=True)  # 0=SYS_ADMIN, 1=ORG_ADMIN, 2=OPERATOR
+    system_role_id = db.Column(db.Integer, primary_key=True)  # 0=SYS_ADMIN, 1=APP_USER
     name = db.Column(db.String(50), nullable=False, unique=True)
     description = db.Column(db.String(255))
-
 
 class Subscription(db.Model):
     __tablename__ = "subscription"
@@ -117,9 +139,7 @@ class Analytics(db.Model):
     peak_hour = db.Column(db.Integer)
     top_intents = db.Column(db.Text)
 
-    __table_args__ = (
-        db.UniqueConstraint("bot_id", "date", name="uq_analytics_bot_date"),
-    )
+    __table_args__ = (db.UniqueConstraint("bot_id", "date", name="uq_analytics_bot_date"), )
 
 class FAQ(db.Model):
     __tablename__ = "faq"

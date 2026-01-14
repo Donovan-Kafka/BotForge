@@ -10,32 +10,53 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent
 SEED_PATH = BASE_DIR / "seed.sql"
 
-# Connect to the database using the DATABASE_URL from .env
-conn = psycopg2.connect(
-    os.environ["DATABASE_URL"],
-    sslmode="require"
-)
+conn = None
+cur = None
 
-cur = conn.cursor()
+try:
+    # Connect to the database
+    conn = psycopg2.connect(
+        os.environ["DATABASE_URL"],
+        sslmode="require"
+    )
 
-# Read and execute seed.sql
-with open(SEED_PATH, "r", encoding="utf-8") as f:
-    sql = f.read()
+    conn.autocommit = False  # ensure transactional safety
+    cur = conn.cursor()
+
+    # Read seed.sql
+    with open(SEED_PATH, "r", encoding="utf-8") as f:
+        sql = f.read()
+
+    # Execute full seed script
     cur.execute(sql)
 
-conn.commit()
+    # Commit if everything succeeds
+    conn.commit()
+    print("seed.sql executed successfully")
 
-# Optional: list tables and number of rows for verification
-cur.execute("""
-    SELECT table_name, COUNT(*) 
-    FROM information_schema.tables t
-    LEFT JOIN pg_tables pgt ON t.table_name = pgt.tablename
-    WHERE t.table_schema = 'public'
-    GROUP BY table_name
-""")
-# Note: This might return all tables, counts not precise. Better to check manually per table if needed.
+    # Verify row counts (actual data tables only)
+    tables = [
+    "system_role", "subscription", "feature", "subscription_features",
+    "organisation", "org_role", "org_permission", "org_role_permission",
+    "personality", "app_user", "faq", "notification",
+    "feedback", "chatbot", "analytics"
+    ]
 
-print("seed.sql executed successfully")
+    print("\nRow counts:")
+    for t in tables:
+        cur.execute(f"SELECT COUNT(*) FROM {t};")
+        count = cur.fetchone()[0]
+        print(f"{t}: {count}")
 
-cur.close()
-conn.close()
+except Exception as e:
+    if conn:
+        conn.rollback()
+    print("Seeding failed:")
+    print(e)
+    raise
+
+finally:
+    if cur:
+        cur.close()
+    if conn:
+        conn.close()
