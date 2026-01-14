@@ -8,14 +8,14 @@
 
 from flask import Blueprint, request, jsonify
 
-from backend.application.AI.chatbot_service import ChatbotService
-from backend.application.AI.intent_service import IntentService
-from backend.application.AI.template_engine import TemplateEngine
-from backend.data_access.AI.company_profile_repo import CompanyProfileRepository
-from backend.data_access.AI.template_repo import TemplateRepository
+from backend.application.ai.chatbot_service import ChatbotService
+from backend.application.ai.intent_service import IntentService
+from backend.application.ai.template_engine import TemplateEngine
+from backend.data_access.ai.company_profile_repo import CompanyProfileRepository
+from backend.data_access.ai.template_repo import TemplateRepository
 
 # BP for chat endpoints
-chat_bp = Blueprint("chat", __name__, url_prefix="/api")
+chat_bp = Blueprint("chat", __name__)
 
 
 @chat_bp.post("/chat")
@@ -57,12 +57,12 @@ def chat():
         intent_service = IntentService()  # can start as keyword-based, later swap to Rasa
         chatbot_service = ChatbotService(
             intent_service=intent_service,
-            company_repo=company_repo,
-            template_repo=template_repo,
+            company_repository=company_repo,
+            template_repository=template_repo,
             template_engine=template_engine,
         )
 
-        result = chatbot_service.handle_message(
+        result = chatbot_service.chat(
             company_id=company_id,
             message=message,
             session_id=session_id,
@@ -79,5 +79,12 @@ def chat():
     except ValueError as e:
         return jsonify({"ok": False, "error": str(e)}), 400
     except Exception as e:
-        # Keep internal error detail minimal for safety
+        # Log full traceback in terminal
+        current_app.logger.error("Chat endpoint failed:\n%s", traceback.format_exc())
+
+        # During development, return the real error to help debugging
+        if current_app.debug:
+            return jsonify({"ok": False, "error": str(e)}), 500
+
+        # In production, keep it generic
         return jsonify({"ok": False, "error": "Internal server error"}), 500
