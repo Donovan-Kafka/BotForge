@@ -30,6 +30,7 @@ def create_app():
     from backend.presentation.routes.featuresAPI import features_bp
     from backend.presentation.routes.feedbackAPI import feedback_bp
     from backend.presentation.routes.chatRoutes import chat_bp
+    from BotForge.backend.presentation.routes.orgRoleAPI import org_roles_bp
 
     app.register_blueprint(unregistered_bp, url_prefix="/api/public")
     app.register_blueprint(faq_bp, url_prefix="/api/public")
@@ -39,6 +40,7 @@ def create_app():
     app.register_blueprint(features_bp, url_prefix="/api")
     app.register_blueprint(feedback_bp, url_prefix="/api")
     app.register_blueprint(chat_bp, url_prefix="/api")
+    app.register_blueprint(org_roles_bp, url_prefix="/api/org-roles")
 
     @app.get("/health")
     def health():
