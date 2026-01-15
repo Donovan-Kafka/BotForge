@@ -4,9 +4,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask import current_app
 
 from backend import db
-from backend.models import Organisation, AppUser
+from backend.models import Organisation, AppUser, OrgRole
 
-ORG_ADMIN_ROLE_ID = 1  # role table: 1 = Admin
 
 def _serializer():
     return URLSafeTimedSerializer(current_app.config["SECRET_KEY"], salt="email-verify")
@@ -37,11 +36,44 @@ def register_org_admin(payload: dict) -> dict:
     db.session.add(org)
     db.session.flush()  
 
+    # Ensure default org roles exist for new organisation
+    org_admin_role = OrgRole.query.filter_by(organisation_id=org.organisation_id, name="ORG_ADMIN").first()
+    staff_role = OrgRole.query.filter_by(organisation_id=org.organisation_id, name="STAFF").first()
+
+    if not org_admin_role:
+        org_admin_role = OrgRole(
+            organisation_id=org.organisation_id,
+            name="ORG_ADMIN",
+            description="Organisation administrator"
+        )
+        db.session.add(org_admin_role)
+
+    if not staff_role:
+        staff_role = OrgRole(
+            organisation_id=org.organisation_id,
+            name="STAFF",
+            description="Standard staff user"
+        )
+        db.session.add(staff_role)
+
+    db.session.flush()  # so org_admin_role gets id
+
+    # Fetch ORG_ADMIN role for the organisation
+    org_admin_role = OrgRole.query.filter_by(
+        organisation_id=org.organisation_id,
+        name="ORG_ADMIN"
+    ).first()
+
+    if not org_admin_role:
+        db.session.rollback()
+        return {"ok": False, "error": "ORG_ADMIN role not found for organisation."}
+
     user = AppUser(
         username=username,
         email=email,
         password=generate_password_hash(password),
-        role_id=ORG_ADMIN_ROLE_ID,
+        system_role_id=None,
+        org_role_id=org_admin_role.org_role_id,
         organisation_id=org.organisation_id,
         status=False
     )
@@ -51,7 +83,7 @@ def register_org_admin(payload: dict) -> dict:
         db.session.commit()
     except IntegrityError as e:
         db.session.rollback()
-        return {"ok": False, "error": str(e.orig)}
+        msg = str(e.orig).lower()
 
         if "app_user_email_key" in msg or "email" in msg:
             return {"ok": False, "error": "Email already registered."}
@@ -122,7 +154,8 @@ def login(payload: dict) -> dict:
             "user_id": user.user_id,
             "username": user.username,
             "email": user.email,
-            "role_id": user.role_id,
+            "system_role_id": user.system_role_id,
+            "org_role_id": user.org_role_id,
             "organisation_id": user.organisation_id,
         }
     }

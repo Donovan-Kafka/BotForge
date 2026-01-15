@@ -1,13 +1,12 @@
 import secrets
 from sqlalchemy.exc import IntegrityError
 from backend import db
-from backend.models import Invitation, AppUser
+from backend.models import Invitation, AppUser, OrgRole
 
 STATUS_PENDING = 0
 STATUS_ACCEPTED = 1
 STATUS_REVOKED = 2
 
-OPERATOR_ROLE_ID = 2  # role table: 2 = User 
 
 def _new_token() -> str:
     
@@ -105,15 +104,25 @@ def accept_invitation_and_create_operator(payload: dict) -> dict:
     if AppUser.query.filter_by(username=username).first():
         return {"ok": False, "error": "Username already taken."}
 
-    # Create operator user
+    # Find STAFF org role for organisation
+    staff_role = OrgRole.query.filter_by(
+        organisation_id=inv.organisation_id,
+        name="STAFF"
+    ).first()
+
+    if not staff_role:
+        return {"ok": False, "error": "STAFF role not found for organisation."}
+
     user = AppUser(
         username=username,
         email=inv.email,
         password=password_hash,
-        role_id=OPERATOR_ROLE_ID,
+        system_role_id=None,
+        org_role_id=staff_role.org_role_id,
         organisation_id=inv.organisation_id,
-        status=True 
+        status=True
     )
+
     db.session.add(user)
 
     # Marking invitation accepted
@@ -132,7 +141,8 @@ def accept_invitation_and_create_operator(payload: dict) -> dict:
             "user_id": user.user_id,
             "username": user.username,
             "email": user.email,
-            "role_id": user.role_id,
+            "system_role_id": user.system_role_id,
+            "org_role_id": user.org_role_id,
             "organisation_id": user.organisation_id
         }
     }

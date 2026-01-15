@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from backend.models import Feedback, AppUser, Feature, FAQ
+from backend.models import Feedback, AppUser, Feature, FAQ, OrgRole
 from backend import db
 
 sysadmin_bp = Blueprint("sysadmin", __name__)
@@ -19,12 +19,20 @@ def list_feedback_candidates():
     candidates = []
     for fb in rows:
         sender = AppUser.query.get(fb.sender_id)
-
+        sender_role_name = None
+        if sender and sender.org_role_id:
+            org_role = OrgRole.query.get(sender.org_role_id)
+            sender_role_name = org_role.name if org_role else None
+        elif sender and sender.system_role_id is not None:
+            sender_role_name = "SYS_ADMIN"
         candidates.append({
             "feedback_id": fb.feedback_id,
             "sender_id": fb.sender_id,
             "sender_username": sender.username if sender else None,
-            "sender_role_id": sender.role_id if sender else None,
+            "sender_system_role_id": sender.system_role_id if sender else None,
+            "sender_org_role_id": sender.org_role_id if sender else None,
+            "organisation_id": sender.organisation_id if sender else None,
+            "sender_role_name": sender_role_name,
             "rating": fb.rating,
             "title": fb.title,
             "content": fb.content,
