@@ -83,11 +83,19 @@ export const authService = {
     async verifyEmail(token: string) {
         return api.get(`/api/public/verify-email?token=${token}`);
     },
+
+    async updateOrgProfile(data: any) {
+        return api.post('/api/public/organisation/profile', data);
+    },
 };
 
 export const publicService = {
     async getTestimonials() {
         return api.get<any>('/api/public/testimonials');
+    },
+
+    async getSubscriptionPlans() {
+        return api.get<any>('/api/subscriptions/active');
     },
 };
 

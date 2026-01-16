@@ -8,6 +8,7 @@ class GetActiveSubscriptions:
         rows = self.subscription_repo.get_active_subscriptions()
 
         return {
+            "ok": True,
             "plans": [
                 {
                     "id": sub_id,

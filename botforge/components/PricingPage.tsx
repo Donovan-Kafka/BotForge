@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageView, User } from '../types';
-import { authService } from '../api';
+import { authService, publicService } from '../api';
 import { Loader2, Check } from 'lucide-react';
 
 interface PricingPageProps {
@@ -13,6 +13,21 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, user, onSu
   const [selectedSize, setSelectedSize] = useState('Small');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [plans, setPlans] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const res = await publicService.getSubscriptionPlans();
+        if (res.ok && res.plans) {
+          setPlans(res.plans);
+        }
+      } catch (error) {
+        console.error("Failed to fetch plans", error);
+      }
+    };
+    fetchPlans();
+  }, []);
 
   const handleSubscribe = async (planId: number, planName: string) => {
     if (!user) {
@@ -77,71 +92,29 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, user, onSu
       )}
 
       <div className="grid md:grid-cols-3 gap-8">
-        {/* Standard (ID: 1) */}
-        <div className="border border-gray-400 p-8 rounded bg-white flex flex-col items-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Standard</h2>
-          <div className="flex items-baseline mb-8">
-            <span className="text-5xl font-light text-gray-900">$10</span>
-            <span className="text-gray-600 ml-2">monthly</span>
+        {plans.map((plan) => (
+          <div key={plan.id} className={`border border-gray-400 p-8 rounded bg-white flex flex-col items-center ${plan.name === 'Pro' ? 'relative transform md:-translate-y-4 shadow-lg' : ''}`}>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h2>
+            <div className="flex items-baseline mb-8">
+              <span className="text-5xl font-light text-gray-900">${parseInt(plan.price)}</span>
+              <span className="text-gray-600 ml-2">monthly</span>
+            </div>
+
+            <button
+              onClick={() => handleSubscribe(plan.id, plan.name)}
+              disabled={isLoading}
+              className={`w-full ${plan.name === 'Pro' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-400 hover:bg-blue-500'} text-white font-bold py-3 px-4 rounded mb-8 transition-colors disabled:opacity-50`}
+            >
+              {user ? 'Subscribe Now' : 'Get Started'}
+            </button>
+
+            <ul className="text-sm text-gray-700 space-y-2 w-full">
+              {plan.description.split('.').filter((d: string) => d.trim()).map((desc: string, i: number) => (
+                <li key={i} className="flex items-start">• <span className="ml-2">{desc.trim()}</span></li>
+              ))}
+            </ul>
           </div>
-
-          <button
-            onClick={() => handleSubscribe(1, 'Standard')}
-            disabled={isLoading}
-            className="w-full bg-blue-400 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded mb-8 transition-colors disabled:opacity-50"
-          >
-            {user ? 'Subscribe Now' : 'Get Started'}
-          </button>
-
-          <ul className="text-sm text-gray-700 space-y-2 w-full">
-            <li className="flex items-start">• <span className="ml-2">300 conversations/month</span></li>
-            <li className="flex items-start">• <span className="ml-2">Best for small teams</span></li>
-          </ul>
-        </div>
-
-        {/* Pro (ID: 2) */}
-        <div className="border border-gray-400 p-8 rounded bg-white flex flex-col items-center relative transform md:-translate-y-4 shadow-lg">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Pro</h2>
-          <div className="flex items-baseline mb-8">
-            <span className="text-5xl font-light text-gray-900">$25</span>
-            <span className="text-gray-600 ml-2">monthly</span>
-          </div>
-
-          <button
-            onClick={() => handleSubscribe(2, 'Pro')}
-            disabled={isLoading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded mb-8 transition-colors disabled:opacity-50"
-          >
-            {user ? 'Subscribe Now' : 'Get Started'}
-          </button>
-
-          <ul className="text-sm text-gray-700 space-y-2 w-full">
-            <li className="flex items-start">• <span className="ml-2">1500 conversations/month</span></li>
-            <li className="flex items-start">• <span className="ml-2">Includes enhanced analytics</span></li>
-          </ul>
-        </div>
-
-        {/* Deluxe (ID: 3) */}
-        <div className="border border-gray-400 p-8 rounded bg-white flex flex-col items-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Deluxe</h2>
-          <div className="flex items-baseline mb-8">
-            <span className="text-5xl font-light text-gray-900">$50</span>
-            <span className="text-gray-600 ml-2">monthly</span>
-          </div>
-
-          <button
-            onClick={() => handleSubscribe(3, 'Deluxe')}
-            disabled={isLoading}
-            className="w-full bg-blue-400 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded mb-8 transition-colors disabled:opacity-50"
-          >
-            {user ? 'Subscribe Now' : 'Get Started'}
-          </button>
-
-          <ul className="text-sm text-gray-700 space-y-2 w-full">
-            <li className="flex items-start">• <span className="ml-2">5000 conversations/month</span></li>
-            <li className="flex items-start">• <span className="ml-2">Enterprise features</span></li>
-          </ul>
-        </div>
+        ))}
       </div>
     </div>
   );
