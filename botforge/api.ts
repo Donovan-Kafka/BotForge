@@ -85,6 +85,12 @@ export const authService = {
     },
 };
 
+export const publicService = {
+    async getTestimonials() {
+        return api.get<any>('/api/public/testimonials');
+    },
+};
+
 export const faqService = {
     async listFaqs() {
         return api.get<any>('/api/public/faq');

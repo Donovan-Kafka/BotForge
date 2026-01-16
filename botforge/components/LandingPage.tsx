@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PageView, Testimonial } from '../types';
 import { Search, RotateCw, Settings, Play } from 'lucide-react';
-import { featureService } from '../api';
+import { featureService, publicService } from '../api';
 
 interface LandingPageProps {
   onNavigate: (page: PageView) => void;
@@ -9,6 +9,7 @@ interface LandingPageProps {
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
   const [features, setFeatures] = useState<any[]>([]);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
 
   useEffect(() => {
     const fetchFeatures = async () => {
@@ -18,21 +19,26 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
         setFeatures(response.features);
       }
     };
-    fetchFeatures();
-  }, []);
 
-  const testimonials: Testimonial[] = [
-    {
-      quote: "The results we have seen with BotForge are groundbreaking, double-digit gains in engagement and resolution rates.",
-      author: "Timothy Lim",
-      role: "Head of Product Support, OpenAI"
-    },
-    {
-      quote: "If you're still debating whether to build your own AI solution or buy one, my advice would be to buy - and specifically buy BotForge.",
-      author: "Samantha Ong",
-      role: "Head of HR Team, Shopee"
-    }
-  ];
+    const fetchTestimonials = async () => {
+      try {
+        const response = await publicService.getTestimonials();
+        if (response.ok && response.testimonials) {
+          const mappedTestimonials: Testimonial[] = response.testimonials.map((t: any) => ({
+            quote: t.content,
+            author: t.author,
+            role: t.role // Note: This displays the system role (e.g. OrgAdmin). 
+          }));
+          setTestimonials(mappedTestimonials);
+        }
+      } catch (error) {
+        console.error("Failed to fetch testimonials", error);
+      }
+    };
+
+    fetchFeatures();
+    fetchTestimonials();
+  }, []);
 
   return (
     <div className="w-full">
