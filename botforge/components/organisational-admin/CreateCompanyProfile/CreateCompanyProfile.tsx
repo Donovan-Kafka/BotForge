@@ -1,5 +1,6 @@
 import React, { useState, ChangeEvent, FormEvent, useRef } from 'react';
 import './CreateCompanyProfile.css';
+import logoImg from './1.png';
 
 interface CreateCompanyProfileProps {
   onSuccess?: () => void;
@@ -67,7 +68,7 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
       <header>
         <div className="logo-container">
           <div className="logo-icon">
-            <img src="/1.png" alt="BotForge Logo" />
+            <img src={logoImg} alt="BotForge Logo" />
           </div>
           <span>BotForge</span>
         </div>
