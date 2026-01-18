@@ -9,6 +9,7 @@ export enum PageView {
   PAYMENT = 'PAYMENT',
   DASHBOARD = 'DASHBOARD',
   SYSTEM_ADMIN = 'SYSTEM_ADMIN'
+  CREATE_PROFILE = 'CREATE_PROFILE',
 }
 
 export enum UserRole {
