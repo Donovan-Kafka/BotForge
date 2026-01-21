@@ -1,7 +1,8 @@
 from flask import Blueprint, request, jsonify
-from backend.models import Feedback, AppUser, Feature, FAQ, OrgRole, Organisation, SystemRole, OrgPermission, OrgRolePermission
+from backend.models import Feedback, AppUser, Feature, FAQ, OrgRole, Organisation, SystemRole, OrgPermission, OrgRolePermission, Subscription, SubscriptionFeature
 from backend import db
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import func
 
 sysadmin_bp = Blueprint("sysadmin", __name__)
 
@@ -721,4 +722,359 @@ def set_permissions_for_org_role(org_role_id):
         "message": "Permissions updated.",
         "org_role_id": org_role_id,
         "org_permission_ids": sorted(set(perm_ids_int))
+    }), 200
+
+
+@sysadmin_bp.get("/subscriptions")
+def list_subscriptions():
+    """
+    Returns all subscriptions + their linked features (id + name + description) ordered by display_order.
+    """
+    _, err = _require_sysadmin()
+    if err:
+        return err
+
+    subs = Subscription.query.order_by(Subscription.subscription_id.asc()).all()
+
+    # prefetch mapping rows
+    sub_ids = [s.subscription_id for s in subs]
+    sf_rows = []
+    if sub_ids:
+        sf_rows = (
+            SubscriptionFeature.query
+            .filter(SubscriptionFeature.subscription_id.in_(sub_ids))
+            .all()
+        )
+
+    # prefetch features
+    feature_ids = list({r.feature_id for r in sf_rows})
+    features_by_id = {}
+    if feature_ids:
+        features = Feature.query.filter(Feature.feature_id.in_(feature_ids)).all()
+        features_by_id = {f.feature_id: f for f in features}
+
+    # build per-sub lists
+    features_by_sub = {sid: [] for sid in sub_ids}
+    # sort by display_order (NULL last), then feature_id for stability
+    sf_rows_sorted = sorted(
+        sf_rows,
+        key=lambda r: ((r.display_order is None), (r.display_order or 9999), r.feature_id)
+    )
+    for r in sf_rows_sorted:
+        f = features_by_id.get(r.feature_id)
+        features_by_sub[r.subscription_id].append({
+            "feature_id": r.feature_id,
+            "name": f.name if f else None,
+            "description": f.description if f else None,
+            "display_order": r.display_order
+        })
+
+    return jsonify({
+        "ok": True,
+        "subscriptions": [
+            {
+                "subscription_id": s.subscription_id,
+                "name": s.name,
+                "price": float(s.price) if s.price is not None else None,
+                "status": int(s.status) if s.status is not None else 0,
+                "description": s.description,
+                "features": features_by_sub.get(s.subscription_id, [])
+            }
+            for s in subs
+        ]
+    }), 200
+
+@sysadmin_bp.post("/subscriptions")
+def create_subscription():
+    _, err = _require_sysadmin()
+    if err:
+        return err
+
+    payload = request.get_json(force=True) or {}
+    name = (payload.get("name") or "").strip()
+    description = (payload.get("description") or "").strip() or None
+
+    # price: accept number or string
+    price = payload.get("price", None)
+    status = payload.get("status", 0)
+
+    if not name:
+        return jsonify({"ok": False, "error": "name is required."}), 400
+    if len(name) > 50:
+        return jsonify({"ok": False, "error": "name max length is 50."}), 400
+    if description and len(description) > 255:
+        return jsonify({"ok": False, "error": "description max length is 255."}), 400
+
+    if price is None:
+        return jsonify({"ok": False, "error": "price is required."}), 400
+    try:
+        price_val = float(price)
+    except (TypeError, ValueError):
+        return jsonify({"ok": False, "error": "price must be a number."}), 400
+    if price_val < 0:
+        return jsonify({"ok": False, "error": "price must be >= 0."}), 400
+
+    try:
+        status_val = int(status)
+    except (TypeError, ValueError):
+        return jsonify({"ok": False, "error": "status must be 0 (active) or 1 (inactive)."}), 400
+    if status_val not in (0, 1):
+        return jsonify({"ok": False, "error": "status must be 0 (active) or 1 (inactive)."}), 400
+
+    s = Subscription(
+        name=name,
+        price=price_val,
+        status=status_val,
+        description=description
+    )
+    db.session.add(s)
+    db.session.commit()
+
+    return jsonify({
+        "ok": True,
+        "message": "Subscription created.",
+        "subscription": {
+            "subscription_id": s.subscription_id,
+            "name": s.name,
+            "price": float(s.price),
+            "status": int(s.status),
+            "description": s.description
+        }
+    }), 201
+
+@sysadmin_bp.put("/subscriptions/<int:subscription_id>")
+def update_subscription(subscription_id):
+    _, err = _require_sysadmin()
+    if err:
+        return err
+
+    payload = request.get_json(force=True) or {}
+    s = Subscription.query.get(subscription_id)
+    if not s:
+        return jsonify({"ok": False, "error": "Subscription not found."}), 404
+
+    if "name" in payload:
+        name = (payload.get("name") or "").strip()
+        if not name:
+            return jsonify({"ok": False, "error": "name cannot be empty."}), 400
+        if len(name) > 50:
+            return jsonify({"ok": False, "error": "name max length is 50."}), 400
+        s.name = name
+
+    if "description" in payload:
+        desc = (payload.get("description") or "").strip() or None
+        if desc and len(desc) > 255:
+            return jsonify({"ok": False, "error": "description max length is 255."}), 400
+        s.description = desc
+
+    if "price" in payload:
+        try:
+            price_val = float(payload.get("price"))
+        except (TypeError, ValueError):
+            return jsonify({"ok": False, "error": "price must be a number."}), 400
+        if price_val < 0:
+            return jsonify({"ok": False, "error": "price must be >= 0."}), 400
+        s.price = price_val
+
+    if "status" in payload:
+        try:
+            status_val = int(payload.get("status"))
+        except (TypeError, ValueError):
+            return jsonify({"ok": False, "error": "status must be 0 (active) or 1 (inactive)."}), 400
+        if status_val not in (0, 1):
+            return jsonify({"ok": False, "error": "status must be 0 (active) or 1 (inactive)."}), 400
+        s.status = status_val
+
+    db.session.commit()
+
+    return jsonify({
+        "ok": True,
+        "message": "Subscription updated.",
+        "subscription": {
+            "subscription_id": s.subscription_id,
+            "name": s.name,
+            "price": float(s.price) if s.price is not None else None,
+            "status": int(s.status) if s.status is not None else 0,
+            "description": s.description
+        }
+    }), 200
+
+@sysadmin_bp.delete("/subscriptions/<int:subscription_id>")
+def delete_subscription(subscription_id):
+    """
+    IMPORTANT:
+    - Since organisation.subscription_id references subscription,
+      hard delete may fail if any organisation is using it.
+    - SAFE delete:
+        If any org references it -> set status=1 (inactive) (soft-delete)
+        Else -> hard delete (also removes subscription_features via manual delete below)
+    """
+    _, err = _require_sysadmin()
+    if err:
+        return err
+
+    s = Subscription.query.get(subscription_id)
+    if not s:
+        return jsonify({"ok": False, "error": "Subscription not found."}), 404
+
+    # Check if referenced by any org 
+    in_use = Organisation.query.filter(Organisation.subscription_id == subscription_id).first() is not None
+
+    if in_use:
+        s.status = 1
+        db.session.commit()
+        return jsonify({
+            "ok": True,
+            "message": "Subscription is in use; set to inactive instead of deleting.",
+            "subscription_id": s.subscription_id,
+            "status": int(s.status)
+        }), 200
+
+    # Not used -> safe to hard delete
+    SubscriptionFeature.query.filter(SubscriptionFeature.subscription_id == subscription_id).delete()
+    db.session.delete(s)
+    db.session.commit()
+
+    return jsonify({"ok": True, "message": "Subscription deleted."}), 200
+
+@sysadmin_bp.get("/subscriptions/<int:subscription_id>/features")
+def get_subscription_features(subscription_id):
+    """
+    Returns feature_ids currently linked to this subscription (plus display_order).
+    """
+    _, err = _require_sysadmin()
+    if err:
+        return err
+
+    s = Subscription.query.get(subscription_id)
+    if not s:
+        return jsonify({"ok": False, "error": "Subscription not found."}), 404
+
+    rows = (
+        SubscriptionFeature.query
+        .filter(SubscriptionFeature.subscription_id == subscription_id)
+        .all()
+    )
+
+    rows_sorted = sorted(
+        rows,
+        key=lambda r: ((r.display_order is None), (r.display_order or 9999), r.feature_id)
+    )
+
+    return jsonify({
+        "ok": True,
+        "subscription_id": subscription_id,
+        "features": [
+            {
+                "feature_id": r.feature_id,
+                "display_order": r.display_order
+            } for r in rows_sorted
+        ]
+    }), 200
+
+@sysadmin_bp.put("/subscriptions/<int:subscription_id>/features")
+def update_subscription_features(subscription_id):
+    """
+    Body:
+      {
+        "feature_ids": [1,2,3]                # simple
+        OR
+        "features": [{"feature_id":1,"display_order":1}, ...]   # advanced
+      }
+    - DB constraint says display_order must be 1..3 or NULL.
+    """
+    _, err = _require_sysadmin()
+    if err:
+        return err
+
+    s = Subscription.query.get(subscription_id)
+    if not s:
+        return jsonify({"ok": False, "error": "Subscription not found."}), 404
+
+    payload = request.get_json(force=True) or {}
+
+    feature_ids = payload.get("feature_ids")
+    features = payload.get("features")
+
+    normalized = []  # list of (feature_id, display_order)
+    if isinstance(features, list):
+        for item in features:
+            try:
+                fid = int(item.get("feature_id"))
+            except Exception:
+                return jsonify({"ok": False, "error": "features[].feature_id must be an integer."}), 400
+            d = item.get("display_order", None)
+            if d is not None:
+                try:
+                    d = int(d)
+                except Exception:
+                    return jsonify({"ok": False, "error": "features[].display_order must be an integer or null."}), 400
+            normalized.append((fid, d))
+    elif isinstance(feature_ids, list):
+        for x in feature_ids:
+            try:
+                normalized.append((int(x), None))
+            except Exception:
+                return jsonify({"ok": False, "error": "feature_ids must contain integers only."}), 400
+    else:
+        return jsonify({"ok": False, "error": "Provide feature_ids[] or features[]"}), 400
+
+    # Deduplicate while keeping order (first occurrence wins)
+    seen = set()
+    deduped = []
+    for fid, d in normalized:
+        if fid not in seen:
+            seen.add(fid)
+            deduped.append((fid, d))
+
+    # validate feature id exist
+    if deduped:
+        wanted_ids = [fid for fid, _ in deduped]
+        existing = Feature.query.filter(Feature.feature_id.in_(wanted_ids)).all()
+        existing_ids = {f.feature_id for f in existing}
+        missing = [fid for fid in wanted_ids if fid not in existing_ids]
+        if missing:
+            return jsonify({"ok": False, "error": f"Invalid feature_id(s): {missing}"}), 400
+
+    try:
+        # replace existing mapping
+        SubscriptionFeature.query.filter(
+            SubscriptionFeature.subscription_id == subscription_id
+        ).delete(synchronize_session=False)
+
+
+        # only assigning display_order for first 3; rest become NULL.
+        auto_counter = 1
+        for fid, d in deduped:
+            if d is None:
+                if auto_counter <= 3:
+                    d = auto_counter
+                    auto_counter += 1
+                else:
+                    d = None
+
+            # enforce DB constraint if provided:
+            if d is not None and (d < 1 or d > 3):
+                return jsonify({
+                    "ok": False,
+                    "error": "display_order must be 1..3 or null (based on DB constraint)."
+                }), 400
+
+            db.session.add(SubscriptionFeature(
+                subscription_id=subscription_id,
+                feature_id=fid,
+                display_order=d
+            ))
+
+        db.session.commit()
+
+    except IntegrityError as e:
+        db.session.rollback()
+        return jsonify({"ok": False, "error": f"DB constraint failed: {str(e.orig)}"}), 400
+
+    return jsonify({
+        "ok": True,
+        "message": "Subscription features updated.",
+        "subscription_id": subscription_id,
+        "feature_ids": [fid for fid, _ in deduped]
     }), 200
