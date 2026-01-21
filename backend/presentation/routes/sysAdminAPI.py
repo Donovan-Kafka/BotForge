@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from backend.models import Feedback, AppUser, Feature, FAQ, OrgRole, Organisation, SystemRole
+from backend.models import Feedback, AppUser, Feature, FAQ, OrgRole, Organisation, SystemRole, OrgPermission, OrgRolePermission
 from backend import db
 from sqlalchemy.exc import IntegrityError
 
@@ -112,6 +112,10 @@ def feature_feedback():
 
 @sysadmin_bp.get("/features")
 def list_features():
+    _, err = _require_sysadmin()
+    if err:
+        return err
+
     features = Feature.query.order_by(Feature.feature_id.asc()).all()
     return jsonify({
         "ok": True,
@@ -509,4 +513,172 @@ def update_user_role(user_id):
             "org_role_id": u.org_role_id,
             "organisation_id": u.organisation_id
         }
+    }), 200
+
+@sysadmin_bp.get("/permissions")
+def list_permissions():
+    _, err = _require_sysadmin()
+    if err:
+        return err
+
+    rows = OrgPermission.query.order_by(OrgPermission.code.asc()).all()
+    return jsonify({
+        "ok": True,
+        "permissions": [
+            {
+                "org_permission_id": p.org_permission_id,
+                "code": p.code,
+                "description": p.description
+            } for p in rows
+        ]
+    }), 200
+
+
+@sysadmin_bp.put("/role-permissions")
+def update_role_permissions_matrix():
+    _, err = _require_sysadmin()
+    if err:
+        return err
+
+    payload = request.get_json(force=True) or {}
+    organisation_id = payload.get("organisation_id")
+    grants = payload.get("grants")  # list of {org_role_id, org_permission_id}
+
+    if not organisation_id or not isinstance(grants, list):
+        return jsonify({"ok": False, "error": "organisation_id and grants[] are required."}), 400
+
+    organisation_id = int(organisation_id)
+
+    # ensure org exists
+    org = Organisation.query.get(organisation_id)
+    if not org:
+        return jsonify({"ok": False, "error": "Organisation not found."}), 404
+
+    # validate roles belong to org
+    valid_role_ids = {
+        r.org_role_id for r in OrgRole.query.filter_by(organisation_id=organisation_id).all()
+    }
+
+    # validate permission ids exist
+    valid_perm_ids = {p.org_permission_id for p in OrgPermission.query.all()}
+
+    desired = set()
+    for g in grants:
+        rid = int(g.get("org_role_id"))
+        pid = int(g.get("org_permission_id"))
+        if rid not in valid_role_ids:
+            return jsonify({"ok": False, "error": f"Invalid org_role_id for this org: {rid}"}), 400
+        if pid not in valid_perm_ids:
+            return jsonify({"ok": False, "error": f"Invalid org_permission_id: {pid}"}), 400
+        desired.add((rid, pid))
+
+    try:
+        # delete existing grants for this org (via join)
+        (
+            OrgRolePermission.query
+            .filter(OrgRolePermission.org_role_id.in_(valid_role_ids))
+            .delete(synchronize_session=False)
+        )
+
+        for (rid, pid) in desired:
+            db.session.add(OrgRolePermission(org_role_id=rid, org_permission_id=pid))
+
+        db.session.commit()
+
+    except IntegrityError as e:
+        db.session.rollback()
+        return jsonify({"ok": False, "error": f"DB constraint failed: {str(e.orig)}"}), 400
+
+    return jsonify({"ok": True, "message": "Role permissions updated."}), 200
+
+
+@sysadmin_bp.get("/org-role-permissions")
+def get_org_role_permissions_matrix():
+    _, err = _require_sysadmin()
+    if err:
+        return err
+
+    organisation_id = request.args.get("organisation_id", type=int)
+    if not organisation_id:
+        return jsonify({"ok": False, "error": "organisation_id query param is required."}), 400
+
+    org = Organisation.query.get(organisation_id)
+    if not org:
+        return jsonify({"ok": False, "error": "Organisation not found."}), 404
+
+    roles = (
+        OrgRole.query
+        .filter(OrgRole.organisation_id == organisation_id)
+        .order_by(OrgRole.name.asc(), OrgRole.org_role_id.asc())
+        .all()
+    )
+
+    permissions = OrgPermission.query.order_by(OrgPermission.code.asc()).all()
+
+    role_ids = [r.org_role_id for r in roles]
+    grants_rows = []
+    if role_ids:
+        grants_rows = (
+            OrgRolePermission.query
+            .filter(OrgRolePermission.org_role_id.in_(role_ids))
+            .all()
+        )
+
+    grants = [{"org_role_id": g.org_role_id, "org_permission_id": g.org_permission_id} for g in grants_rows]
+
+    return jsonify({
+        "ok": True,
+        "organisation_id": organisation_id,
+        "roles": [{"org_role_id": r.org_role_id, "name": r.name, "description": r.description} for r in roles],
+        "permissions": [{"org_permission_id": p.org_permission_id, "code": p.code, "description": p.description} for p in permissions],
+        "grants": grants
+    }), 200
+
+
+@sysadmin_bp.put("/org-roles/<int:org_role_id>/permissions")
+def set_permissions_for_org_role(org_role_id):
+    _, err = _require_sysadmin()
+    if err:
+        return err
+
+    payload = request.get_json(force=True) or {}
+    organisation_id = payload.get("organisation_id")
+    perm_ids = payload.get("org_permission_ids")
+
+    if organisation_id is None:
+        return jsonify({"ok": False, "error": "organisation_id is required."}), 400
+    if not isinstance(perm_ids, list):
+        return jsonify({"ok": False, "error": "org_permission_ids must be a list."}), 400
+
+    role = OrgRole.query.get(org_role_id)
+    if not role:
+        return jsonify({"ok": False, "error": "Org role not found."}), 404
+
+    if role.organisation_id != int(organisation_id):
+        return jsonify({"ok": False, "error": "Role does not belong to this organisation."}), 400
+
+    # Validate permissions exist
+    perm_ids_int = []
+    for x in perm_ids:
+        try:
+            perm_ids_int.append(int(x))
+        except:
+            return jsonify({"ok": False, "error": "org_permission_ids must contain integers only."}), 400
+
+    existing = OrgPermission.query.filter(OrgPermission.org_permission_id.in_(perm_ids_int)).all()
+    if len(existing) != len(set(perm_ids_int)):
+        return jsonify({"ok": False, "error": "One or more org_permission_ids are invalid."}), 400
+
+    # Replace mappings
+    OrgRolePermission.query.filter_by(org_role_id=org_role_id).delete()
+    for pid in set(perm_ids_int):
+        db.session.add(OrgRolePermission(org_role_id=org_role_id, org_permission_id=pid))
+
+    db.session.commit()
+
+    return jsonify({
+        "ok": True,
+        "message": "Permissions updated.",
+        "org_role_id": org_role_id,
+        "org_permission_ids": sorted(set(perm_ids_int))
     }), 200
