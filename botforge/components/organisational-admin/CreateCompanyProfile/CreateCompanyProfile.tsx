@@ -1,85 +1,89 @@
-import React, { useState, ChangeEvent, FormEvent, useRef } from 'react';
+import React, { useState, ChangeEvent, FormEvent, useRef, useEffect } from 'react';
 import './CreateCompanyProfile.css';
-import logoImg from './1.png';
+import { authService } from '../../../api'; // Make sure this path is correct based on your folder structure
+import { Loader2 } from 'lucide-react';
 
 interface CreateCompanyProfileProps {
   onSuccess?: () => void;
 }
 
 const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }) => {
-
   const [companyName, setCompanyName] = useState('');
-  const [industry, setIndustry] = useState('f&b');
-  const [size, setSize] = useState('11-50');
+  const [industry, setIndustry] = useState('Technology');
+  const [size, setSize] = useState('1-10');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  React.useEffect(() => {
+  // Pre-fill logic (optional, keeps existing session checks)
+  useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
         const user = JSON.parse(storedUser);
-        // If user is SysAdmin (role_id 0 generally maps to SysAdmin in this context, 
-        // but strictly checking system_role_id if available is better. 
-        // Assuming user object structure from login response logic.)
+        // If system admin, we might skip this step or just allow pass-through
         if (user.role_id === 0 || user.system_role_id === 0) {
-          console.log("System Admin detected, skipping specific checks.");
-          // Ideally redirect or just show success, but user asked "no need to do this"
-          // Assuming we skip to success
-          if (onSuccess) onSuccess();
+           if (onSuccess) onSuccess();
         }
       } catch (e) {
-        console.error("Error parsing user", e);
+        console.error("Error parsing user data", e);
       }
     }
   }, [onSuccess]);
-
-
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setLogoFile(file);
-
       setPreviewUrl(URL.createObjectURL(file));
     }
   };
-
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
   };
 
-
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
-    // 1. Create the data object
-    const formData = new FormData();
-    formData.append('company', companyName);
-    formData.append('industry', industry);
-    formData.append('size', size);
-    if (logoFile) {
-      formData.append('logo', logoFile);
-    }
+    try {
+      // 1. Get current user to find Organisation ID
+      const storedUser = localStorage.getItem('user');
+      if (!storedUser) {
+        alert("Session expired. Please login again.");
+        return;
+      }
+      const user = JSON.parse(storedUser);
 
-    // 2. FOR NOW: Just log it to inspect (Simulate backend)
-    console.log("--- Form Submitted ---");
-    console.log("Company:", companyName);
-    console.log("Industry:", industry);
-    console.log("Size:", size);
-    if (logoFile) console.log("Logo File:", logoFile.name);
+      if (!user.organisation_id) {
+        alert("Error: No organisation found for this user.");
+        setIsSubmitting(false);
+        return;
+      }
 
-    // 3. Simulate success (Alert the user)
-    alert("Profile info captured! (Backend integration pending)");
+      // 2. Call the Backend API
+      const res = await authService.updateOrgProfile({
+        organisation_id: user.organisation_id,
+        industry: industry,
+        size: size
+      });
 
-    // 4. (Optional) If you want to test navigation, you can call onSuccess() here
-    if (onSuccess) {
-      onSuccess();
+      if (res.ok) {
+        // 3. On success, navigate to the next page
+        if (onSuccess) {
+          onSuccess();
+        }
+      } else {
+        alert("Failed to update profile: " + (res.error || "Unknown error"));
+      }
+
+    } catch (error) {
+      console.error("Submission error:", error);
+      alert("An unexpected error occurred. Please check your connection.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -88,12 +92,10 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
       <header>
         <div className="logo-container">
           <div className="logo-icon">
-            <img src={logoImg} alt="BotForge Logo" />
+            <span style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>🤖</span>
           </div>
           <span>BotForge</span>
         </div>
-
-        {/* 右上角的 Hardcode 用户信息已被移除 */}
         <div></div>
       </header>
 
@@ -109,7 +111,7 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
               id="company"
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
-              required
+              placeholder="Confirm Company Name"
             />
           </div>
 
@@ -120,9 +122,13 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
               value={industry}
               onChange={(e) => setIndustry(e.target.value)}
             >
-              <option value="f&b">F&B</option>
-              <option value="tech">Technology</option>
-              <option value="retail">Retail</option>
+              <option value="Technology">Technology</option>
+              <option value="F&B">F&B</option>
+              <option value="Retail">Retail</option>
+              <option value="Education">Education</option>
+              <option value="Finance">Finance</option>
+              <option value="Healthcare">Healthcare</option>
+              <option value="Other">Other</option>
             </select>
           </div>
 
@@ -142,8 +148,6 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
 
           <div className="form-group">
             <label>Company Logo:</label>
-
-            {/* 这个 input 是隐藏的，真正的功能全靠下面的 div 触发 */}
             <input
               type="file"
               ref={fileInputRef}
@@ -154,29 +158,33 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
 
             <div className="upload-container">
               {previewUrl ? (
-
                 <div className="preview-box">
                   <img src={previewUrl} alt="Logo Preview" className="preview-image" />
                 </div>
               ) : (
-
                 <div className="upload-icon">
                   <svg viewBox="0 0 24 24">
                     <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
                   </svg>
                 </div>
               )}
-
-              {/* 点击这个按钮会触发上面的 hidden input */}
               <button type="button" className="upload-btn" onClick={handleUploadClick}>
                 {previewUrl ? 'Change File' : 'Upload file'}
               </button>
             </div>
+            <p style={{fontSize: '0.8rem', color: '#666', marginTop: '5px'}}>
+              * Logo upload is currently visual only.
+            </p>
           </div>
 
           <div className="submit-container">
-            <button type="submit" className="btn-submit">
-              Choose Subscription Plan
+            <button 
+              type="submit" 
+              className="btn-submit flex items-center justify-center gap-2"
+              disabled={isSubmitting}
+            >
+              {isSubmitting && <Loader2 className="animate-spin h-5 w-5" />}
+              {isSubmitting ? 'Saving...' : 'Choose Subscription Plan'}
             </button>
           </div>
         </form>
