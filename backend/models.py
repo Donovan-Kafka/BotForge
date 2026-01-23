@@ -7,9 +7,60 @@ class Organisation(db.Model):
 
     organisation_id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
-    industry = db.Column(db.String(50))
-    size = db.Column(db.String(20))
+
+    # High-level info
+    industry = db.Column(db.String(50))     # 'restaurant', 'education', 'retail'
     subscription_id = db.Column(db.Integer, db.ForeignKey("subscription.subscription_id"))
+
+    # ===== Common profiling fields (all industries) =====
+    description = db.Column(db.Text)
+    location = db.Column(db.String(255))
+    city = db.Column(db.String(100))
+    country = db.Column(db.String(100))
+
+    contact_email = db.Column(db.String(255))
+    contact_phone = db.Column(db.String(50))
+    website_url = db.Column(db.String(255))
+
+    business_hours = db.Column(db.String(255))  # e.g. "Mon–Sun, 10am–10pm"
+
+    # ===== Restaurant-specific fields =====
+    cuisine_type = db.Column(db.String(255))          # e.g. "Japanese, Fusion"
+    restaurant_style = db.Column(db.String(100))      # e.g. "Casual", "Fine Dining"
+
+    dining_options = db.Column(db.String(255))        # e.g. "dine_in,takeaway,delivery"
+    supports_reservations = db.Column(db.Boolean, default=False)
+    reservation_link = db.Column(db.String(255))
+
+    price_range = db.Column(db.String(10))            # "$", "$$", "$$$"
+    seating_capacity = db.Column(db.Integer)
+    specialties = db.Column(db.Text)
+
+    # ===== Education-specific fields =====
+    institution_type = db.Column(db.String(100))      # e.g. "Tuition Centre", "University"
+    target_audience = db.Column(db.String(255))       # e.g. "Secondary, JC, Adult Learners"
+    course_types = db.Column(db.String(255))          # e.g. "Diploma, Short Courses"
+    delivery_mode = db.Column(db.String(255))         # e.g. "online,in_person,hybrid"
+
+    intake_periods = db.Column(db.String(255))        # e.g. "January,May,September"
+    application_link = db.Column(db.String(255))
+    response_time = db.Column(db.String(100))         # e.g. "Within 3 working days"
+    key_programs = db.Column(db.Text)
+
+    # ===== Retail-specific fields =====
+    retail_type = db.Column(db.String(100))           # e.g. "Fashion", "Electronics"
+    product_categories = db.Column(db.String(255))    # e.g. "Shoes,Bags,Accessories"
+
+    has_physical_store = db.Column(db.Boolean, default=True)
+    has_online_store = db.Column(db.Boolean, default=False)
+    online_store_url = db.Column(db.String(255))
+
+    delivery_options = db.Column(db.String(255))      # e.g. "Standard,Express,Self-collection"
+    return_policy = db.Column(db.Text)
+    warranty_info = db.Column(db.Text)
+
+    payment_methods = db.Column(db.String(255))       # e.g. "Cash,Credit Card,PayNow"
+    promotions_note = db.Column(db.Text)
 
 class OrgRole(db.Model):
     __tablename__ = "org_role"
