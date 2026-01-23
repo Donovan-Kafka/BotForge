@@ -21,6 +21,9 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, user, onSu
         const res = await publicService.getSubscriptionPlans();
         if (res.ok && res.plans) {
           setPlans(res.plans);
+        }else if (Array.isArray(res)) {
+           // Fallback if the API returns a direct array instead of { ok: true, plans: [] }
+           setPlans(res);
         }
       } catch (error) {
         console.error("Failed to fetch plans", error);
@@ -39,10 +42,10 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, user, onSu
     setMessage(null);
 
     try {
-      const res = await authService.updateOrgProfile({
-        organisation_id: user.organisation_id,
-        subscription_id: planId,
-        size: selectedSize
+      const res = await publicService.assignSubscription(
+        (user as any).user_id || (user as any).id, // flexible check for ID field
+        planId, 
+        selectedSize
       });
 
       if (res.ok) {
@@ -54,6 +57,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, user, onSu
         setMessage(`Error: ${res.error}`);
       }
     } catch (err) {
+      console.error(err);
       setMessage('Error updating subscription.');
     } finally {
       setIsLoading(false);
