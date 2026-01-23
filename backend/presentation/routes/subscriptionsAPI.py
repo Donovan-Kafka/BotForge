@@ -2,8 +2,6 @@ from flask import Blueprint, jsonify, request
 from backend.data_access.Subscriptions.subscriptions import SubscriptionRepository
 from backend.application.UnregisteredUsers.getActiveSubscriptions import GetActiveSubscriptions
 from backend.application.UnregisteredUsers.choosePlan import AssignSubscriptionUseCase
-from backend.data_access.Users.users import UserRepository
-from backend.data_access.Organisation.organisation import OrganisationRepository
 
 subscriptions_bp = Blueprint("subscriptions", __name__, url_prefix="/api")
 
@@ -42,14 +40,7 @@ def assign_subscription():
         }), 400
 
     subscription_repo = SubscriptionRepository()
-    user_repo = UserRepository()
-    organisation_repo = OrganisationRepository()
-    
-    use_case = AssignSubscriptionUseCase(
-        user_repo=user_repo,
-        organisation_repo=organisation_repo,
-        subscription_repo=subscription_repo
-    )
+    use_case = AssignSubscriptionUseCase(subscription_repo)
 
     result = use_case.execute(
         user_id=user_id,
