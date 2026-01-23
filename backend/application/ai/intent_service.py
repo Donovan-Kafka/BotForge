@@ -1,49 +1,64 @@
-# What it does:
+# backend/application/ai/intent_service.py
 
-# Sends user text to Rasa
+import os
+from typing import Dict, Any
 
-# Receives:
-
-# intent (e.g. business_hours)
-
-# entities (e.g. date, time, pax)
-
-from typing import Any, Dict, List, Tuple
+import joblib
+from sklearn.pipeline import Pipeline
+from sklearn.exceptions import NotFittedError
 
 
 class IntentService:
     """
-    Simple intent detection service (keyword-based for now).
+    Intent detection using a scikit-learn text classification pipeline.
 
-    Later, you can swap the implementation to call Rasa NLU,
-    but this class interface stays the same:
-        parse(message) -> (intent, entities)
+    The model is trained in intent_model.py and saved as intent_model.joblib.
     """
 
-    def parse(self, message: str) -> Tuple[str, List[Dict[str, Any]]]:
-        text = (message or "").lower().strip()
+    def __init__(self):
+        base_dir = os.path.dirname(__file__)
+        model_path = os.path.join(base_dir, "models", "intent_model.joblib")
 
-        if not text:
-            return "fallback", []
+        if not os.path.exists(model_path):
+            raise RuntimeError(
+                f"Intent model not found at {model_path}. "
+                "Run `python -m backend.application.ai.intent_model` to train it."
+            )
 
-        # Very simple rules (starter)
-        if any(k in text for k in ["hi", "hello", "hey", "good morning", "good evening"]):
-            return "greeting", []
+        self.model: Pipeline = joblib.load(model_path)
 
-        if any(k in text for k in ["open", "opening", "close", "closing", "hours", "time"]):
-            return "business_hours", []
+    def parse(self, message: str) -> Dict[str, Any]:
+        """
+        Returns:
+        {
+          "intent": "<intent_name>",
+          "confidence": <float>,
+          "entities": []  # placeholder for future entity extraction
+        }
+        """
+        if not message or not message.strip():
+            return {
+                "intent": "fallback",
+                "confidence": 0.0,
+                "entities": [],
+            }
 
-        if any(k in text for k in ["price", "pricing", "cost", "fee", "plan", "subscription"]):
-            return "pricing", []
+        try:
+            if hasattr(self.model, "predict_proba"):
+                probs = self.model.predict_proba([message])[0]
+                labels = self.model.classes_
+                pred_idx = probs.argmax()
+                intent = labels[pred_idx]
+                confidence = float(probs[pred_idx])
+            else:
+                intent = self.model.predict([message])[0]
+                confidence = 1.0
+        except NotFittedError:
+            intent = "fallback"
+            confidence = 0.0
 
-        if any(k in text for k in ["book", "booking", "reserve", "reservation", "appointment"]):
-            return "booking", []
-
-        if any(k in text for k in ["where", "location", "address", "how to get there"]):
-            return "location", []
-
-        if any(k in text for k in ["contact", "email", "phone", "call", "support", "helpdesk"]):
-            return "contact_support", []
-
-        # Default fallback
-        return "fallback", []
+        return {
+            "intent": intent,
+            "confidence": confidence,
+            "entities": [],  # no entities yet
+        }

@@ -1,81 +1,100 @@
-# What it does (in order):
+# backend/application/ai/chatbot_service.py
 
-# Receives user message + company ID
+from typing import Any, Dict, List, Optional
 
-# Calls NLP to detect intent & entities
-
-# Loads company profile (hours, services, etc.)
-
-# Loads the correct response template
-
-# Fills the template with company data
 
 class ChatbotService:
-    def __init__(self, intent_service, company_repository, template_repository, template_engine):
+    """
+    Orchestrates:
+    - intent detection (IntentService)
+    - company profiling (CompanyProfileRepository)
+    - response templates (TemplateRepository + TemplateEngine)
+    """
+
+    def __init__(
+        self,
+        intent_service,
+        company_repository,
+        template_repository,
+        template_engine,
+    ):
         self.intent_service = intent_service
         self.company_repository = company_repository
         self.template_repository = template_repository
         self.template_engine = template_engine
 
-    def chat(self, company_id: str, message: str, session_id=None):
-        if not company_id:
-            raise ValueError("company_id is required")
+    def chat(
+        self,
+        company_id: str | int,
+        message: str,
+        session_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Main entrypoint called from chatRoutes.py
 
-        if not message or not message.strip():
-            raise ValueError("message cannot be empty")
+        Returns a dict that can be JSON-ified:
+        {
+          "ok": True,
+          "intent": "...",
+          "confidence": 0.9,
+          "entities": [...],
+          "reply": "...",
+          "quick_replies": [...]
+        }
+        """
 
-        message = message.strip()
+        # 1) Intent detection using sklearn model
+        intent_result = self.intent_service.parse(message)
+        intent = intent_result.get("intent", "fallback")
+        confidence = float(intent_result.get("confidence", 0.0))
+        entities: List[Dict[str, Any]] = intent_result.get("entities", [])
 
-        # 1) Intent + entities
-        intent, entities = self._detect_intent(message)
-
-        # 2) Company profile
+        # 2) Load company profile (Organisation-based)
         company = self.company_repository.get_company_profile(company_id)
-        if not company:
-            raise ValueError("Company not found")
 
-        industry = company.get("industry", "default")
+        # 3) Determine industry (restaurant / retail / education / default)
+        industry = None
+        if company:
+            industry = company.get("industry") or "default"
+        else:
+            industry = "default"
 
-        # 3) Template
+        # 4) Fetch template for (industry, intent)
         template = self.template_repository.get_template(
             company_id=company_id,
             industry=industry,
-            intent=intent
+            intent=intent,
         )
 
-        # 4) Render
+        # 5) Render response text
         reply = self.template_engine.render(
             template=template,
-            company=company,
-            entities=entities
+            company=company or {},
+            entities=entities,
         )
 
-        quick_replies = self._get_quick_replies(industry)
+        # 6) Quick replies (you can customize per industry later)
+        quick_replies = self._quick_replies_for(industry, intent)
 
         return {
-            "reply": reply,
+            "ok": True,
             "intent": intent,
+            "confidence": confidence,
             "entities": entities,
-            "quick_replies": quick_replies
+            "reply": reply,
+            "quick_replies": quick_replies,
         }
 
-    def _detect_intent(self, message: str):
-        try:
-            intent, entities = self.intent_service.parse(message)
-            if not intent:
-                intent = "fallback"
-            if entities is None:
-                entities = []
-            return intent, entities
-        except Exception:
-            return "fallback", []
-
-    def _get_quick_replies(self, industry: str):
-        common = ["Pricing", "Business hours", "Contact support"]
-
-        if industry == "restaurant":
-            return common + ["Make a reservation", "Menu", "Location"]
-        elif industry == "education":
-            return common + ["Courses", "Admissions", "Schedule"]
-        else:
-            return common + ["FAQ", "Services"]
+    # ------------------------------------------------------------------
+    # Helper: define quick replies shown to the user
+    # ------------------------------------------------------------------
+    def _quick_replies_for(self, industry: str, intent: str) -> List[str]:
+        # You can later branch by industry (restaurant/education/retail).
+        # For now a simple static set:
+        return [
+            "Business hours",
+            "Location",
+            "Pricing",
+            "Contact support",
+            "Make a booking",
+        ]
