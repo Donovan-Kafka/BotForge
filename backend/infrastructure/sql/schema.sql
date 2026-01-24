@@ -3,6 +3,7 @@
 DROP TABLE IF EXISTS featured_video CASCADE;
 DROP TABLE IF EXISTS analytics CASCADE;
 DROP TABLE IF EXISTS chatbot CASCADE;
+DROP TABLE IF EXISTS chat_message CASCADE;
 DROP TABLE IF EXISTS feedback CASCADE;
 DROP TABLE IF EXISTS notification CASCADE;
 DROP TABLE IF EXISTS faq CASCADE;
@@ -230,6 +231,22 @@ CREATE TABLE analytics (
     top_intents TEXT,
     FOREIGN KEY (bot_id) REFERENCES chatbot(bot_id),
     UNIQUE (bot_id, date)
+);
+
+CREATE TABLE chat_message (
+    message_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    organisation_id INT NOT NULL,
+    chatbot_id INT,
+    session_id VARCHAR(100),
+    sender VARCHAR(20) NOT NULL, -- "user" or "bot"
+    sender_user_id INT,
+    sender_name VARCHAR(100),
+    message TEXT NOT NULL,
+    intent VARCHAR(50),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id),
+    FOREIGN KEY (chatbot_id) REFERENCES chatbot(bot_id),
+    FOREIGN KEY (sender_user_id) REFERENCES app_user(user_id)
 );
 
 CREATE TABLE featured_video (

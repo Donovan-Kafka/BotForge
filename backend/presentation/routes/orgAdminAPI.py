@@ -1,10 +1,11 @@
 from flask import Blueprint, request, jsonify
+from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 from backend import db
 from backend.application.user_service import UserService
 from backend.application.user_profile_service import UserProfileService
 from backend.data_access.Users.users import UserRepository
-from backend.models import Organisation, Chatbot
+from backend.models import Organisation, Chatbot, Personality, ChatMessage, AppUser
 
 org_admin_bp = Blueprint("org_admin", __name__, url_prefix="/api/org-admin")
 
@@ -27,6 +28,40 @@ def _get_or_create_chatbot(organisation_id: int) -> Chatbot | None:
     db.session.add(chatbot)
     db.session.commit()
     return chatbot
+
+
+def _validate_chatbot_payload(data: dict) -> str | None:
+    if "name" in data and data.get("name") is not None:
+        if not isinstance(data.get("name"), str) or len(data.get("name")) > 50:
+            return "name must be a string up to 50 characters."
+
+    if "description" in data and data.get("description") is not None:
+        if not isinstance(data.get("description"), str) or len(data.get("description")) > 255:
+            return "description must be a string up to 255 characters."
+
+    if "personality_id" in data and data.get("personality_id") is not None:
+        try:
+            personality_id = int(data.get("personality_id"))
+        except (TypeError, ValueError):
+            return "personality_id must be an integer."
+        if not Personality.query.get(personality_id):
+            return "personality_id is invalid."
+
+    if "welcome_message" in data and data.get("welcome_message") is not None:
+        if not isinstance(data.get("welcome_message"), str) or len(data.get("welcome_message")) > 500:
+            return "welcome_message must be a string up to 500 characters."
+
+    if "primary_language" in data and data.get("primary_language") is not None:
+        if not isinstance(data.get("primary_language"), str) or len(data.get("primary_language")) > 10:
+            return "primary_language must be a string up to 10 characters."
+        if data.get("primary_language").strip().lower() != "english":
+            return "primary_language must be English for now."
+
+    if "allow_emojis" in data and data.get("allow_emojis") is not None:
+        if not isinstance(data.get("allow_emojis"), bool):
+            return "allow_emojis must be a boolean."
+
+    return None
 
 
 # =================================
@@ -155,6 +190,100 @@ def deactivate_admin_account():
 
 
 # =================================
+# ORG ADMIN: personalities
+# =================================
+
+@org_admin_bp.get("/personalities")
+def list_personalities():
+    rows = Personality.query.order_by(Personality.personality_id.asc()).all()
+
+    return jsonify({
+        "ok": True,
+        "personalities": [
+            {
+                "personality_id": p.personality_id,
+                "name": p.name,
+                "description": p.description,
+                "type": p.type,
+            }
+            for p in rows
+        ]
+    }), 200
+
+
+# =================================
+# ORG ADMIN: chat history
+# =================================
+
+@org_admin_bp.get("/chat-history")
+def get_chat_history():
+    organisation_id = request.args.get("organisation_id", type=int)
+    if not organisation_id:
+        return {"error": "organisation_id is required"}, 400
+
+    q = (request.args.get("q") or "").strip()
+    date_from = request.args.get("from")
+    date_to = request.args.get("to")
+    page = request.args.get("page", type=int) or 1
+    page_size = request.args.get("page_size", type=int) or 20
+
+    query = ChatMessage.query.filter(ChatMessage.organisation_id == organisation_id)
+
+    if q:
+        query = query.filter(ChatMessage.message.ilike(f"%{q}%"))
+
+    if date_from:
+        try:
+            start = datetime.strptime(date_from, "%Y-%m-%d")
+            query = query.filter(ChatMessage.created_at >= start)
+        except ValueError:
+            return {"error": "from must be YYYY-MM-DD"}, 400
+
+    if date_to:
+        try:
+            end = datetime.strptime(date_to, "%Y-%m-%d")
+            # inclusive end of day
+            end = end.replace(hour=23, minute=59, second=59)
+            query = query.filter(ChatMessage.created_at <= end)
+        except ValueError:
+            return {"error": "to must be YYYY-MM-DD"}, 400
+
+    total = query.count()
+    rows = (
+        query.order_by(ChatMessage.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
+
+    # Resolve usernames in batch
+    user_ids = {r.sender_user_id for r in rows if r.sender_user_id}
+    users = AppUser.query.filter(AppUser.user_id.in_(user_ids)).all() if user_ids else []
+    user_map = {u.user_id: u.username for u in users}
+
+    results = []
+    for r in rows:
+        sender_name = r.sender_name or user_map.get(r.sender_user_id) or "Guest"
+        created_at = r.created_at
+        results.append({
+            "message_id": r.message_id,
+            "sender": r.sender,
+            "sender_name": sender_name,
+            "message": r.message,
+            "date": created_at.strftime("%d-%m-%Y") if created_at else None,
+            "time": created_at.strftime("%I:%M %p") if created_at else None,
+        })
+
+    return jsonify({
+        "ok": True,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "messages": results,
+    }), 200
+
+
+# =================================
 # ORG ADMIN: customize chatbot
 # =================================
 
@@ -178,7 +307,6 @@ def get_chatbot_settings():
             "personality_id": chatbot.personality_id,
             "welcome_message": chatbot.welcome_message,
             "primary_language": chatbot.primary_language,
-            "tone": chatbot.tone,
             "allow_emojis": chatbot.allow_emojis,
         }
     }), 200
@@ -191,6 +319,10 @@ def update_chatbot_settings():
         return {"error": "organisation_id is required"}, 400
 
     data = request.get_json() or {}
+    error = _validate_chatbot_payload(data)
+    if error:
+        return {"error": error}, 400
+
     chatbot = _get_or_create_chatbot(organisation_id)
     if not chatbot:
         return {"error": "Organisation not found"}, 404
@@ -208,8 +340,6 @@ def update_chatbot_settings():
         chatbot.welcome_message = data.get("welcome_message")
     if data.get("primary_language") is not None:
         chatbot.primary_language = data.get("primary_language")
-    if data.get("tone") is not None:
-        chatbot.tone = data.get("tone")
     if data.get("allow_emojis") is not None:
         chatbot.allow_emojis = data.get("allow_emojis")
 
@@ -225,7 +355,6 @@ def update_chatbot_settings():
             "personality_id": chatbot.personality_id,
             "welcome_message": chatbot.welcome_message,
             "primary_language": chatbot.primary_language,
-            "tone": chatbot.tone,
             "allow_emojis": chatbot.allow_emojis,
         }
     }), 200

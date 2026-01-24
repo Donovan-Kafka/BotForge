@@ -41,10 +41,10 @@ INSERT INTO subscription_features (subscription_id, feature_id, display_order) V
 (3, 1, 1), (3, 2, 2), (3, 3, 3);
 
 
-INSERT INTO organisation (name, industry, size, subscription_id) VALUES
-('Prata Rasa', 'F&B', 'Small', 3),
-('Retailers', 'Retail', 'Medium', 2),
-('Edu', 'Education', 'Small', 1);
+INSERT INTO organisation (name, industry, subscription_id) VALUES
+('Prata Rasa', 'F&B', 3),
+('Retailers', 'Retail', 2),
+('Edu', 'Education', 1);
 
 
 INSERT INTO org_role (organisation_id, name, description) VALUES
@@ -77,9 +77,8 @@ WHERE r.name = 'STAFF';
 
 
 INSERT INTO personality (name, description, type) VALUES
-('Friendly', 'Approachable', 'Supportive'),
-('Professional', 'Formal', 'Corporate'),
-('Humorous', 'Adds jokes', 'Casual');
+('Friendly & Casual', 'Light-hearted and approachable', 'Casual'),
+('Professional & Formal', 'Polite and business-like', 'Formal');
 
 -- system admin (no organisation id)
 INSERT INTO app_user (
