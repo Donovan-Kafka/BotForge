@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy.exc import IntegrityError
 from backend import db
 from backend.application.user_service import UserService
@@ -280,6 +280,102 @@ def get_chat_history():
         "page": page,
         "page_size": page_size,
         "messages": results,
+    }), 200
+
+
+# =================================
+# ORG ADMIN: chatbot analytics
+# =================================
+
+@org_admin_bp.get("/analytics")
+def get_chatbot_analytics():
+    organisation_id = request.args.get("organisation_id", type=int)
+    if not organisation_id:
+        return {"error": "organisation_id is required"}, 400
+
+    date_from = request.args.get("from")
+    date_to = request.args.get("to")
+
+    # Default range: last 7 days (UTC)
+    try:
+        if date_to:
+            end = datetime.strptime(date_to, "%Y-%m-%d")
+        else:
+            end = datetime.utcnow()
+
+        if date_from:
+            start = datetime.strptime(date_from, "%Y-%m-%d")
+        else:
+            start = end - timedelta(days=6)
+    except ValueError:
+        return {"error": "from/to must be YYYY-MM-DD"}, 400
+
+    # Inclusive end of day
+    end = end.replace(hour=23, minute=59, second=59)
+
+    rows = (
+        ChatMessage.query
+        .filter(ChatMessage.organisation_id == organisation_id)
+        .filter(ChatMessage.sender == "user")
+        .filter(ChatMessage.created_at >= start)
+        .filter(ChatMessage.created_at <= end)
+        .order_by(ChatMessage.created_at.asc())
+        .all()
+    )
+
+    # Daily counts (Mon-Sun)
+    daily_counts = {}
+    unique_users = set()
+    unique_sessions = set()
+    hourly_counts = {}
+
+    for r in rows:
+        ts = r.created_at
+        if not ts:
+            continue
+        day_key = ts.date()
+        daily_counts[day_key] = daily_counts.get(day_key, 0) + 1
+
+        hour = ts.hour
+        hourly_counts[hour] = hourly_counts.get(hour, 0) + 1
+
+        if r.sender_user_id:
+            unique_users.add(r.sender_user_id)
+        elif r.session_id:
+            unique_sessions.add(r.session_id)
+
+    # Fill missing dates in range
+    daily_list = []
+    cursor = start.date()
+    end_date = end.date()
+    while cursor <= end_date:
+        daily_list.append({
+            "date": cursor.strftime("%d-%m-%Y"),
+            "day": cursor.strftime("%A"),
+            "count": daily_counts.get(cursor, 0),
+        })
+        cursor += timedelta(days=1)
+
+    # Most active hour
+    most_active_hour = None
+    if hourly_counts:
+        most_active_hour = max(hourly_counts, key=hourly_counts.get)
+
+    return jsonify({
+        "ok": True,
+        "range": {
+            "from": start.strftime("%Y-%m-%d"),
+            "to": end.strftime("%Y-%m-%d"),
+            "timezone": "UTC",
+        },
+        "daily_chats": daily_list,
+        "total_chats": sum(daily_counts.values()),
+        "unique_users": len(unique_users) if unique_users else len(unique_sessions),
+        "most_active_hour": {
+            "hour_24": most_active_hour,
+            "label": None if most_active_hour is None else datetime.strptime(str(most_active_hour), "%H").strftime("%I %p"),
+            "count": hourly_counts.get(most_active_hour, 0) if most_active_hour is not None else 0,
+        },
     }), 200
 
 
