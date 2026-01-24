@@ -1,13 +1,32 @@
 from flask import Blueprint, request, jsonify
 from sqlalchemy.exc import IntegrityError
+from backend import db
 from backend.application.user_service import UserService
 from backend.application.user_profile_service import UserProfileService
 from backend.data_access.Users.users import UserRepository
+from backend.models import Organisation, Chatbot
 
 org_admin_bp = Blueprint("org_admin", __name__, url_prefix="/api/org-admin")
 
 user_service = UserService(UserRepository())
 profile_service = UserProfileService(UserRepository())
+
+def _get_or_create_chatbot(organisation_id: int) -> Chatbot | None:
+    org = Organisation.query.get(organisation_id)
+    if not org:
+        return None
+
+    chatbot = Chatbot.query.filter_by(organisation_id=organisation_id).first()
+    if chatbot:
+        return chatbot
+
+    chatbot = Chatbot(
+        organisation_id=organisation_id,
+        name=f"{org.name} Chatbot" if org.name else "Chatbot"
+    )
+    db.session.add(chatbot)
+    db.session.commit()
+    return chatbot
 
 
 # =================================
@@ -133,3 +152,80 @@ def deactivate_admin_account():
         return {"error": str(e)}, 400
 
     return {"message": "Account deactivated"}, 200
+
+
+# =================================
+# ORG ADMIN: customize chatbot
+# =================================
+
+@org_admin_bp.get("/chatbot")
+def get_chatbot_settings():
+    organisation_id = request.args.get("organisation_id", type=int)
+    if not organisation_id:
+        return {"error": "organisation_id is required"}, 400
+
+    chatbot = _get_or_create_chatbot(organisation_id)
+    if not chatbot:
+        return {"error": "Organisation not found"}, 404
+
+    return jsonify({
+        "ok": True,
+        "chatbot": {
+            "bot_id": chatbot.bot_id,
+            "organisation_id": chatbot.organisation_id,
+            "name": chatbot.name,
+            "description": chatbot.description,
+            "personality_id": chatbot.personality_id,
+            "welcome_message": chatbot.welcome_message,
+            "primary_language": chatbot.primary_language,
+            "tone": chatbot.tone,
+            "allow_emojis": chatbot.allow_emojis,
+        }
+    }), 200
+
+
+@org_admin_bp.put("/chatbot")
+def update_chatbot_settings():
+    organisation_id = request.args.get("organisation_id", type=int)
+    if not organisation_id:
+        return {"error": "organisation_id is required"}, 400
+
+    data = request.get_json() or {}
+    chatbot = _get_or_create_chatbot(organisation_id)
+    if not chatbot:
+        return {"error": "Organisation not found"}, 404
+
+    # Core fields
+    if data.get("name") is not None:
+        chatbot.name = data.get("name")
+    if data.get("description") is not None:
+        chatbot.description = data.get("description")
+    if data.get("personality_id") is not None:
+        chatbot.personality_id = data.get("personality_id")
+
+    # Customize fields
+    if data.get("welcome_message") is not None:
+        chatbot.welcome_message = data.get("welcome_message")
+    if data.get("primary_language") is not None:
+        chatbot.primary_language = data.get("primary_language")
+    if data.get("tone") is not None:
+        chatbot.tone = data.get("tone")
+    if data.get("allow_emojis") is not None:
+        chatbot.allow_emojis = data.get("allow_emojis")
+
+    db.session.commit()
+
+    return jsonify({
+        "ok": True,
+        "chatbot": {
+            "bot_id": chatbot.bot_id,
+            "organisation_id": chatbot.organisation_id,
+            "name": chatbot.name,
+            "description": chatbot.description,
+            "personality_id": chatbot.personality_id,
+            "welcome_message": chatbot.welcome_message,
+            "primary_language": chatbot.primary_language,
+            "tone": chatbot.tone,
+            "allow_emojis": chatbot.allow_emojis,
+        }
+    }), 200
