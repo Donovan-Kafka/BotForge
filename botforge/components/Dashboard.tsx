@@ -30,106 +30,166 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
     const [currentRole, setCurrentRole] = useState<UserRole.ADMIN | UserRole.STAFF>(UserRole.ADMIN);
     const [activeTab, setActiveTab] = useState<string>('analytics'); // Default to analytics/overview
 
-    // Mock Data for Analytics
-    const analyticsData = {
-        totalChats: 1234,
-        uniqueUsers: 789,
-        avgResponseTime: '3s',
+    const [analyticsData, setAnalyticsData] = useState<any>(null);
+    const [loading, setLoading] = useState(false);
+    const [dateRange, setDateRange] = useState({ from: '', to: '' });
+
+    React.useEffect(() => {
+        if (activeTab === 'analytics' && user?.organisation_id) {
+            fetchAnalytics();
+        }
+    }, [activeTab, user?.organisation_id]);
+
+    const fetchAnalytics = async () => {
+        if (!user?.organisation_id) return;
+        setLoading(true);
+        const res = await import('../api').then(m => m.orgAdminService.getChatbotAnalytics(user.organisation_id!, dateRange));
+        if (res.ok) {
+            setAnalyticsData(res);
+        } else {
+            console.error(res.error);
+        }
+        setLoading(false);
     };
 
-    const renderAnalytics = () => (
-        <div className="animate-in fade-in duration-500">
-            {/* Date Filter */}
-            <div className="flex items-center gap-4 mb-8">
-                <span className="font-bold text-gray-700 text-sm">Date Range:</span>
-                <div className="flex items-center gap-2">
-                    <div className="relative">
-                        <input type="text" placeholder="dd-----yyyy" className="border border-gray-300 rounded px-3 py-1.5 text-sm w-32 outline-none focus:border-blue-500" />
-                        <Calendar className="w-4 h-4 text-gray-400 absolute right-2 top-2 pointer-events-none" />
+    const renderAnalytics = () => {
+        // Safe accessors
+        const totalChats = analyticsData?.total_chats || 0;
+        const uniqueUsers = analyticsData?.unique_users || 0;
+        const activeHour = analyticsData?.most_active_hour;
+        const dailyChats = analyticsData?.daily_chats || [];
+
+        // Simple chart scaling
+        const height = 200;
+        const width = 800;
+        const padding = 40;
+        const maxCount = Math.max(...dailyChats.map((d: any) => d.count), 5); // min scale 5
+
+        const getX = (index: number) => {
+            if (dailyChats.length <= 1) return padding;
+            return padding + (index / (dailyChats.length - 1)) * (width - 2 * padding);
+        };
+
+        const getY = (count: number) => {
+            return height - padding - (count / maxCount) * (height - 2 * padding);
+        };
+
+        const pathD = dailyChats.length > 0
+            ? `M${getX(0)},${getY(dailyChats[0].count)} ` + dailyChats.map((d: any, i: number) => `L${getX(i)},${getY(d.count)}`).join(' ')
+            : '';
+
+        return (
+            <div className="animate-in fade-in duration-500">
+                {/* Date Filter */}
+                <div className="flex items-center gap-4 mb-8">
+                    <span className="font-bold text-gray-700 text-sm">Date Range:</span>
+                    <div className="flex items-center gap-2">
+                        <div className="relative">
+                            <input
+                                type="date"
+                                value={dateRange.from}
+                                onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
+                                className="border border-gray-300 rounded px-3 py-1.5 text-sm w-36 outline-none focus:border-blue-500"
+                            />
+                        </div>
+                        <span className="text-gray-400">-</span>
+                        <div className="relative">
+                            <input
+                                type="date"
+                                value={dateRange.to}
+                                onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
+                                className="border border-gray-300 rounded px-3 py-1.5 text-sm w-36 outline-none focus:border-blue-500"
+                            />
+                        </div>
                     </div>
-                    <span className="text-gray-400">-</span>
-                    <div className="relative">
-                        <input type="text" placeholder="dd-----yyyy" className="border border-gray-300 rounded px-3 py-1.5 text-sm w-32 outline-none focus:border-blue-500" />
-                        <Calendar className="w-4 h-4 text-gray-400 absolute right-2 top-2 pointer-events-none" />
+                    <button
+                        onClick={fetchAnalytics}
+                        className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-1.5 px-6 rounded text-sm transition-colors"
+                    >
+                        Apply
+                    </button>
+                </div>
+
+                {/* Main Chart Section */}
+                <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm mb-6">
+                    <h3 className="font-bold text-gray-700 mb-6">Daily Chats</h3>
+                    <div className="h-64 w-full relative">
+                        {loading ? (
+                            <div className="flex items-center justify-center h-full text-gray-400">Loading...</div>
+                        ) : (
+                            <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible">
+                                {/* Grid Lines */}
+                                {[0, 0.25, 0.5, 0.75, 1].map((pct) => (
+                                    <line
+                                        key={pct}
+                                        x1={padding}
+                                        y1={padding + pct * (height - 2 * padding)}
+                                        x2={width - padding}
+                                        y2={padding + pct * (height - 2 * padding)}
+                                        stroke="#f3f4f6"
+                                        strokeWidth="1"
+                                    />
+                                ))}
+
+                                {/* Y-Axis Labels */}
+                                <text x={padding - 10} y={padding} className="text-xs fill-gray-400" textAnchor="end">{Math.round(maxCount)}</text>
+                                <text x={padding - 10} y={height - padding} className="text-xs fill-gray-400" textAnchor="end">0</text>
+
+                                {/* X-Axis Labels */}
+                                {dailyChats.map((d: any, i: number) => (
+                                    <text key={i} x={getX(i)} y={height - 10} className="text-xs fill-gray-500" textAnchor="middle">{d.date.slice(0, 5)}</text>
+                                ))}
+
+                                {/* The Line Path */}
+                                <path
+                                    d={pathD}
+                                    fill="none"
+                                    stroke="#3b82f6"
+                                    strokeWidth="3"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                />
+
+                                {/* Data Points */}
+                                {dailyChats.map((d: any, i: number) => (
+                                    <circle key={i} cx={getX(i)} cy={getY(d.count)} r="4" fill="#3b82f6">
+                                        <title>{d.date}: {d.count} chats</title>
+                                    </circle>
+                                ))}
+                            </svg>
+                        )}
                     </div>
                 </div>
-                <button className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-1.5 px-6 rounded text-sm transition-colors">
-                    Apply
-                </button>
-            </div>
 
-            {/* Main Chart Section */}
-            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm mb-6">
-                <h3 className="font-bold text-gray-700 mb-6">Daily Chats</h3>
-                <div className="h-64 w-full relative">
-                    {/* Custom SVG Line Chart to match wireframe style */}
-                    <svg viewBox="0 0 800 300" className="w-full h-full overflow-visible">
-                        {/* Y-Axis Grid Lines */}
-                        <line x1="0" y1="250" x2="800" y2="250" stroke="#f3f4f6" strokeWidth="1" />
-                        <line x1="0" y1="200" x2="800" y2="200" stroke="#f3f4f6" strokeWidth="1" />
-                        <line x1="0" y1="150" x2="800" y2="150" stroke="#f3f4f6" strokeWidth="1" />
-                        <line x1="0" y1="100" x2="800" y2="100" stroke="#f3f4f6" strokeWidth="1" />
-                        <line x1="0" y1="50" x2="800" y2="50" stroke="#f3f4f6" strokeWidth="1" />
+                {/* KPI Cards */}
+                <div className="grid md:grid-cols-3 gap-6 mb-8">
+                    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                        <p className="text-xs font-bold text-gray-500 uppercase mb-2">Total Chats</p>
+                        <h4 className="text-3xl font-bold text-gray-900">{totalChats}</h4>
+                    </div>
+                    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                        <p className="text-xs font-bold text-gray-500 uppercase mb-2">Unique Users</p>
+                        <h4 className="text-3xl font-bold text-gray-900">{uniqueUsers}</h4>
+                    </div>
+                    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                        <p className="text-xs font-bold text-gray-500 uppercase mb-2">Most Active Hour</p>
+                        <h4 className="text-xl font-bold text-gray-900">
+                            {activeHour?.label || 'N/A'}
+                        </h4>
+                        <span className="text-sm text-gray-500">
+                            {activeHour?.count || 0} chats
+                        </span>
+                    </div>
+                </div>
 
-                        {/* Y-Axis Labels */}
-                        <text x="-30" y="255" className="text-xs fill-gray-400" textAnchor="end">50</text>
-                        <text x="-30" y="205" className="text-xs fill-gray-400" textAnchor="end">100</text>
-                        <text x="-30" y="155" className="text-xs fill-gray-400" textAnchor="end">150</text>
-                        <text x="-30" y="105" className="text-xs fill-gray-400" textAnchor="end">250</text>
-                        <text x="-30" y="55" className="text-xs fill-gray-400" textAnchor="end">350</text>
-
-                        {/* X-Axis Labels */}
-                        <text x="0" y="280" className="text-xs fill-gray-500">Mon</text>
-                        <text x="133" y="280" className="text-xs fill-gray-500">Tue</text>
-                        <text x="266" y="280" className="text-xs fill-gray-500">Wed</text>
-                        <text x="400" y="280" className="text-xs fill-gray-500">Thu</text>
-                        <text x="533" y="280" className="text-xs fill-gray-500">Fri</text>
-                        <text x="666" y="280" className="text-xs fill-gray-500">Sat</text>
-                        <text x="800" y="280" className="text-xs fill-gray-500">Sun</text>
-
-                        {/* The Line Path */}
-                        <path
-                            d="M0,170 C50,140 80,40 133,40 S200,60 266,90 S350,230 400,230 S480,140 533,140 S600,135 666,140 S750,160 800,170"
-                            fill="none"
-                            stroke="#3b82f6"
-                            strokeWidth="3"
-                        />
-
-                        {/* Data Points */}
-                        <circle cx="0" cy="170" r="4" fill="#3b82f6" />
-                        <circle cx="133" cy="40" r="4" fill="#3b82f6" />
-                        <circle cx="266" cy="90" r="4" fill="#3b82f6" />
-                        <circle cx="400" cy="230" r="4" fill="#3b82f6" />
-                        <circle cx="533" cy="140" r="4" fill="#3b82f6" />
-                        <circle cx="666" cy="140" r="4" fill="#3b82f6" />
-                        <circle cx="800" cy="170" r="4" fill="#3b82f6" />
-                    </svg>
+                <div className="flex justify-center">
+                    <button className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-8 rounded flex items-center gap-2 transition-colors">
+                        Export Report
+                    </button>
                 </div>
             </div>
-
-            {/* KPI Cards */}
-            <div className="grid md:grid-cols-3 gap-6 mb-8">
-                <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                    <p className="text-xs font-bold text-gray-500 uppercase mb-2">Total Chats</p>
-                    <h4 className="text-3xl font-bold text-gray-900">{analyticsData.totalChats}</h4>
-                </div>
-                <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                    <p className="text-xs font-bold text-gray-500 uppercase mb-2">Unique Users</p>
-                    <h4 className="text-3xl font-bold text-gray-900">{analyticsData.uniqueUsers}</h4>
-                </div>
-                <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                    <p className="text-xs font-bold text-gray-500 uppercase mb-2">Avg Response Time</p>
-                    <h4 className="text-3xl font-bold text-gray-900">{analyticsData.avgResponseTime}</h4>
-                </div>
-            </div>
-
-            <div className="flex justify-center">
-                <button className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-8 rounded flex items-center gap-2 transition-colors">
-                    Export Report
-                </button>
-            </div>
-        </div>
-    );
+        );
+    };
 
     return (
         <div className="flex h-screen bg-white font-sans">
@@ -324,14 +384,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
                     {activeTab === 'customise' && (
                         currentRole === UserRole.STAFF
                             ? <StaffCustomize onBack={() => setActiveTab('analytics')} />
-                            : <AdminCustomize onBack={() => setActiveTab('analytics')} />
+                            : <AdminCustomize onBack={() => setActiveTab('analytics')} organisationId={user?.organisation_id} />
                     )}
 
                     {/* Shared Tabs (History) */}
                     {activeTab === 'history' && (
                         currentRole === UserRole.STAFF
                             ? <StaffHistory onBack={() => setActiveTab('analytics')} />
-                            : <AdminHistory onBack={() => setActiveTab('analytics')} />
+                            : <AdminHistory onBack={() => setActiveTab('analytics')} organisationId={user?.organisation_id} />
                     )}
 
                     {/* Shared Tabs (Feedback) */}

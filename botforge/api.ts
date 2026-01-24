@@ -180,6 +180,31 @@ export const orgAdminService = {
 
     async updateUserRole(userId: number, newRoleId: number) {
         return api.put<any>(`/api/org-admin/users/${userId}/role`, { new_org_role_id: newRoleId });
+    },
+
+    // Chatbot Management
+    async getChatbotSettings(organisationId: number) {
+        return api.get<any>(`/api/org-admin/chatbot?organisation_id=${organisationId}`);
+    },
+
+    async updateChatbotSettings(organisationId: number, data: any) {
+        return api.put<any>(`/api/org-admin/chatbot?organisation_id=${organisationId}`, data);
+    },
+
+    async listPersonalities() {
+        return api.get<any>('/api/org-admin/personalities');
+    },
+
+    // Chat History
+    async getChatHistory(organisationId: number, params: { q?: string; from?: string; to?: string; page?: number; page_size?: number } = {}) {
+        const query = new URLSearchParams(params as any);
+        return api.get<any>(`/api/org-admin/chat-history?organisation_id=${organisationId}&${query.toString()}`);
+    },
+
+    // Analytics
+    async getChatbotAnalytics(organisationId: number, params: { from?: string; to?: string } = {}) {
+        const query = new URLSearchParams(params as any);
+        return api.get<any>(`/api/org-admin/analytics?organisation_id=${organisationId}&${query.toString()}`);
     }
 };
 
