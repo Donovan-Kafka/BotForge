@@ -48,8 +48,49 @@ def get_org_profile(organisation_id):
             "organisation_id": org.organisation_id,
             "name": org.name,
             "industry": org.industry,
-            "size": org.size,
-            "subscription_id": org.subscription_id
+            "subscription_id": org.subscription_id,
+
+            # Common profiling fields
+            "description": org.description,
+            "location": org.location,
+            "city": org.city,
+            "country": org.country,
+            "contact_email": org.contact_email,
+            "contact_phone": org.contact_phone,
+            "website_url": org.website_url,
+            "business_hours": org.business_hours,
+
+            # Restaurant-specific
+            "cuisine_type": org.cuisine_type,
+            "restaurant_style": org.restaurant_style,
+            "dining_options": org.dining_options,
+            "supports_reservations": org.supports_reservations,
+            "reservation_link": org.reservation_link,
+            "price_range": org.price_range,
+            "seating_capacity": org.seating_capacity,
+            "specialties": org.specialties,
+
+            # Education-specific
+            "institution_type": org.institution_type,
+            "target_audience": org.target_audience,
+            "course_types": org.course_types,
+            "delivery_mode": org.delivery_mode,
+            "intake_periods": org.intake_periods,
+            "application_link": org.application_link,
+            "response_time": org.response_time,
+            "key_programs": org.key_programs,
+
+            # Retail-specific
+            "retail_type": org.retail_type,
+            "product_categories": org.product_categories,
+            "has_physical_store": org.has_physical_store,
+            "has_online_store": org.has_online_store,
+            "online_store_url": org.online_store_url,
+            "delivery_options": org.delivery_options,
+            "return_policy": org.return_policy,
+            "warranty_info": org.warranty_info,
+            "payment_methods": org.payment_methods,
+            "promotions_note": org.promotions_note
         }
     }), 200
 

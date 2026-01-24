@@ -173,11 +173,17 @@ class Chatbot(db.Model):
     __tablename__ = "chatbot"
 
     bot_id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), nullable=False)
+    name = db.Column(db.String(50), nullable=False)  # <-- used as "Bot Name" in UI
     description = db.Column(db.String(255))
     creation_date = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     organisation_id = db.Column(db.Integer, db.ForeignKey("organisation.organisation_id"), nullable=False)
     personality_id = db.Column(db.Integer, db.ForeignKey("personality.personality_id"))
+
+    # === Customize Chatbot fields ===
+    welcome_message = db.Column(db.Text, nullable=False, default="Hi! How can I help you today?")
+    primary_language = db.Column(db.String(10), nullable=False, default="English")
+    tone = db.Column(db.String(20), nullable=False, default="Friendly")  # e.g. 'Friendly', 'Professional'
+    allow_emojis = db.Column(db.Boolean, nullable=False, default=True)
     
 class Analytics(db.Model):
     __tablename__ = "analytics"
