@@ -210,3 +210,18 @@ class FAQ(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("app_user.user_id"), nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
     updated_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
+
+
+class ChatMessage(db.Model):
+    __tablename__ = "chat_message"
+
+    message_id = db.Column(db.Integer, primary_key=True)
+    organisation_id = db.Column(db.Integer, db.ForeignKey("organisation.organisation_id"), nullable=False)
+    chatbot_id = db.Column(db.Integer, db.ForeignKey("chatbot.bot_id"))
+    session_id = db.Column(db.String(100))
+    sender = db.Column(db.String(20), nullable=False)  # "user" or "bot"
+    sender_user_id = db.Column(db.Integer, db.ForeignKey("app_user.user_id"))
+    sender_name = db.Column(db.String(100))
+    message = db.Column(db.Text, nullable=False)
+    intent = db.Column(db.String(50))
+    created_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
