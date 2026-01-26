@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { PageView, User } from '../types';
-import { authService, publicService } from '../api';
+import { authService, publicService, subscriptionService } from '../api';
 import { Loader2, Check } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface PricingPageProps {
-  onNavigate: (page: PageView) => void;
   user: User | null;
-  onSuccess?: () => void;
 }
 
-export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, user, onSuccess }) => {
+export const PricingPage: React.FC<PricingPageProps> = ({ user }) => {
+  const navigate = useNavigate();
   const [selectedSize, setSelectedSize] = useState('Small');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -31,7 +31,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, user, onSu
 
   const handleSubscribe = async (planId: number, planName: string) => {
     if (!user) {
-      onNavigate(PageView.REGISTER);
+      navigate('/register');
       return;
     }
 
@@ -40,7 +40,6 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, user, onSu
 
     try {
       // 1. Update Organization Size
-      // We do this first to ensure the organization profile reflects the user's selection
       const profileRes = await authService.updateOrgProfile({
         organisation_id: user.organisation_id,
         size: selectedSize
@@ -51,7 +50,6 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, user, onSu
       }
 
       // 2. Assign the Subscription Plan
-      // We use the specific service that hits /api/subscriptions/assign
       const subRes = await subscriptionService.assignSubscription({
         user_id: user.user_id,
         subscription_id: planId
@@ -59,9 +57,9 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onNavigate, user, onSu
 
       if (subRes.ok) {
         setMessage(`Successfully subscribed to ${planName} Plan (${selectedSize})!`);
-        if (onSuccess) {
-          setTimeout(onSuccess, 1500); // Wait 1.5s to show message
-        }
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1500);
       } else {
         setMessage(`Error: ${subRes.error}`);
       }

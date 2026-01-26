@@ -1,43 +1,37 @@
 import React, { useState } from 'react';
-import { PageView } from '../types';
 import { Bot, Menu, X } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 interface LayoutProps {
   children: React.ReactNode;
-  setCurrentPage: (page: PageView) => void;
-  currentPage: PageView;
   isLoggedIn: boolean;
   onLogout: () => void;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ 
-  children, 
-  setCurrentPage, 
-  currentPage, 
+export const Layout: React.FC<LayoutProps> = ({
+  children,
   isLoggedIn,
   onLogout
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const currentPath = location.pathname;
 
-  const navClass = (page: PageView) => 
-    `cursor-pointer hover:text-blue-600 transition-colors ${currentPage === page ? 'text-blue-600 font-semibold' : 'text-gray-600'}`;
+  const navClass = (path: string) =>
+    `cursor-pointer hover:text-blue-600 transition-colors ${currentPath === path ? 'text-blue-600 font-semibold' : 'text-gray-600'}`;
 
   const handleNavClick = (id: string) => {
-     if (currentPage === PageView.LANDING) {
-       document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-     } else {
-       setCurrentPage(PageView.LANDING);
-       setTimeout(() => {
-         document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-       }, 100);
-     }
-     setIsMenuOpen(false);
+    if (currentPath === '/') {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      navigate('/');
+      setTimeout(() => {
+        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+    setIsMenuOpen(false);
   };
-
-  // If inside dashboard, we might use a different layout, but for now we wrap everything
-  if (currentPage === PageView.DASHBOARD) {
-    return <>{children}</>;
-  }
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -46,32 +40,32 @@ export const Layout: React.FC<LayoutProps> = ({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             {/* Logo */}
-            <div 
-              className="flex items-center gap-2 cursor-pointer" 
-              onClick={() => setCurrentPage(PageView.LANDING)}
+            <Link
+              className="flex items-center gap-2 cursor-pointer"
+              to="/"
             >
               <div className="bg-blue-600 p-1.5 rounded-lg">
                 <Bot className="h-6 w-6 text-white" />
               </div>
               <span className="text-xl font-bold text-gray-900">BotForge</span>
-            </div>
+            </Link>
 
             {/* Desktop Nav */}
             <nav className="hidden md:flex items-center space-x-8">
               <span className="cursor-pointer hover:text-blue-600 text-gray-600 transition-colors" onClick={() => handleNavClick('features')}>Features</span>
               <span className="cursor-pointer hover:text-blue-600 text-gray-600 transition-colors" onClick={() => handleNavClick('testimonials')}>Testimonials</span>
-              <span className={navClass(PageView.PRICING)} onClick={() => setCurrentPage(PageView.PRICING)}>Pricing</span>
-              <span className={navClass(PageView.FAQ)} onClick={() => setCurrentPage(PageView.FAQ)}>FAQ</span>
-              
+              <Link className={navClass('/pricing')} to="/pricing">Pricing</Link>
+              <Link className={navClass('/faq')} to="/faq">FAQ</Link>
+
               {!isLoggedIn ? (
-                <button 
-                  onClick={() => setCurrentPage(PageView.LOGIN)}
+                <Link
+                  to="/login"
                   className="text-gray-900 font-medium hover:text-blue-600"
                 >
                   Login
-                </button>
+                </Link>
               ) : (
-                <button 
+                <button
                   onClick={onLogout}
                   className="text-gray-900 font-medium hover:text-blue-600"
                 >
@@ -94,9 +88,9 @@ export const Layout: React.FC<LayoutProps> = ({
           <div className="md:hidden border-t border-gray-100 bg-white py-4 px-4 space-y-4">
             <div className="block py-2 text-gray-600" onClick={() => handleNavClick('features')}>Features</div>
             <div className="block py-2 text-gray-600" onClick={() => handleNavClick('testimonials')}>Testimonials</div>
-            <div className="block py-2 text-gray-600" onClick={() => { setCurrentPage(PageView.PRICING); setIsMenuOpen(false); }}>Pricing</div>
-            <div className="block py-2 text-gray-600" onClick={() => { setCurrentPage(PageView.FAQ); setIsMenuOpen(false); }}>FAQ</div>
-            <div className="block py-2 font-medium text-blue-600" onClick={() => { setCurrentPage(PageView.LOGIN); setIsMenuOpen(false); }}>Login</div>
+            <Link className="block py-2 text-gray-600" to="/pricing" onClick={() => setIsMenuOpen(false)}>Pricing</Link>
+            <Link className="block py-2 text-gray-600" to="/faq" onClick={() => setIsMenuOpen(false)}>FAQ</Link>
+            <Link className="block py-2 font-medium text-blue-600" to="/login" onClick={() => setIsMenuOpen(false)}>Login</Link>
           </div>
         )}
       </header>

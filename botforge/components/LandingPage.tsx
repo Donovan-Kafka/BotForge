@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { PageView, Testimonial } from '../types';
+import { Testimonial } from '../types';
 import { Search, RotateCw, Settings, Play, Star } from 'lucide-react';
 import { featureService, publicService } from '../api';
+import { Link } from 'react-router-dom';
 
-interface LandingPageProps {
-  onNavigate: (page: PageView) => void;
-}
-
-export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
+export const LandingPage: React.FC = () => {
   const [features, setFeatures] = useState<any[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
 
@@ -64,12 +61,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               <p className="text-blue-100 text-lg">
                 Build, train, and deploy intelligent agents in minutes. No coding required.
               </p>
-              <button
-                onClick={() => onNavigate(PageView.REGISTER)}
-                className="bg-white text-blue-600 hover:bg-gray-100 font-semibold py-3 px-8 rounded shadow-lg transition-all transform hover:scale-105"
+              <Link
+                to="/register"
+                className="bg-white text-blue-600 hover:bg-gray-100 font-semibold py-3 px-8 rounded shadow-lg transition-all transform hover:scale-105 inline-block"
               >
                 Register Now
-              </button>
+              </Link>
             </div>
           </div>
         </div>

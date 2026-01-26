@@ -2,14 +2,15 @@ import React, { useState } from 'react';
 import { PageView, User } from '../types';
 import { Bot, AlertCircle, Loader2 } from 'lucide-react';
 import { authService } from '../api';
+import { Link, useNavigate } from 'react-router-dom';
 
 interface AuthProps {
   view: PageView;
-  onNavigate: (page: PageView) => void;
   onLoginSuccess: (user: User) => void;
 }
 
-export const Auth: React.FC<AuthProps> = ({ view, onNavigate, onLoginSuccess }) => {
+export const Auth: React.FC<AuthProps> = ({ view, onLoginSuccess }) => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -157,12 +158,12 @@ export const Auth: React.FC<AuthProps> = ({ view, onNavigate, onLoginSuccess }) 
               <h3 className="text-xl font-bold mb-2">Registration Successful!</h3>
               <p>Please check your email ({formData.email}) to verify your account.</p>
             </div>
-            <button
-              onClick={() => onNavigate(PageView.LOGIN)}
+            <Link
+              to="/login"
               className="text-blue-600 underline"
             >
               Back to Login
-            </button>
+            </Link>
           </div>
         </div>
       );
@@ -300,12 +301,12 @@ export const Auth: React.FC<AuthProps> = ({ view, onNavigate, onLoginSuccess }) 
           <p className="text-gray-800 text-lg">Login to get started.</p>
         </div>
 
-        <button
-          onClick={() => onNavigate(PageView.LOGIN)}
+        <Link
+          to="/login"
           className="bg-white border-2 border-gray-600 text-gray-800 font-bold py-2 px-8 rounded hover:bg-gray-50 transition-colors"
         >
           Login
-        </button>
+        </Link>
       </div>
     );
   }
