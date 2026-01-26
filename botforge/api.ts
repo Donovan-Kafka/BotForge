@@ -235,3 +235,20 @@ export const subscriptionService = {
         return api.post('/api/subscriptions/assign', data);
     }
 };
+
+export const notificationService = {
+    async listNotifications(userId: number) {
+        return api.get<any>(`/api/notifications/?user_id=${userId}`);
+    },
+
+    async markAsRead(userId: number, messageId: number) {
+        return api.put<any>(`/api/notifications/${messageId}/read`, { user_id: userId });
+    },
+
+    async deleteNotification(userId: number, messageId: number) {
+        // DELETE requests with body are non-standard but Flask accepts them.
+        // However, standard fetch might strip body from DELETE. 
+        // Let's adhere to the backend requirement which expects JSON body for user_id.
+        return api.request<any>(`/api/notifications/${messageId}`, 'DELETE', { user_id: userId });
+    }
+};

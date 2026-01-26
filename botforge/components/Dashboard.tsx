@@ -34,11 +34,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
     const [loading, setLoading] = useState(false);
     const [dateRange, setDateRange] = useState({ from: '', to: '' });
 
+    // Notifications Logic
+    const [unreadCount, setUnreadCount] = useState(0);
+
     React.useEffect(() => {
         if (activeTab === 'analytics' && user?.organisation_id) {
             fetchAnalytics();
         }
     }, [activeTab, user?.organisation_id]);
+
+    React.useEffect(() => {
+        if (user?.user_id) {
+            fetchUnreadNotifications();
+        }
+    }, [user?.user_id]);
+
+    const fetchUnreadNotifications = async () => {
+        if (!user?.user_id) return;
+        const res = await import('../api').then(m => m.notificationService.listNotifications(user.user_id));
+        if (res.ok && Array.isArray(res)) {
+            const unread = res.filter((n: any) => !n.is_read).length;
+            setUnreadCount(unread);
+        }
+    };
 
     const fetchAnalytics = async () => {
         if (!user?.organisation_id) return;
@@ -276,7 +294,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
                             className="relative cursor-pointer"
                             onClick={() => setActiveTab('notifications')}
                         >
-                            <span className="absolute top-0 right-0 block h-2 w-2 rounded-full ring-2 ring-white bg-red-400"></span>
+                            {unreadCount > 0 && (
+                                <span className="absolute top-0 right-0 block h-2 w-2 rounded-full ring-2 ring-white bg-red-400"></span>
+                            )}
                             <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
                         </div>
                         <div className="flex items-center gap-3">
@@ -355,13 +375,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
 
                     {/* Notifications Tab */}
                     {activeTab === 'notifications' && (
-                        <Notifications onBack={() => setActiveTab('analytics')} />
+                        <Notifications onBack={() => { setActiveTab('analytics'); fetchUnreadNotifications(); }} user={user} />
                     )}
 
                     {/* Subscription Tab (Admin Only) */}
                     {activeTab === 'subscription' && currentRole === UserRole.ADMIN && (
                         <PricingPage
-                            onNavigate={() => { }}
                             user={user}
                             onSuccess={() => setActiveTab('analytics')}
                         />
