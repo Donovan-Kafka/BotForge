@@ -1,16 +1,18 @@
-# backend/application/chat_conversation_service.py
 from backend.application.chat_service import ChatMessageService
+from backend.data_access.ChatMessages.chatMessages import ChatMessageRepository
+from backend.infrastructure.mongodb.mongo_client import get_mongo_db
 
 
 class ChatConversationService:
     """
     Manages chat conversations by integrating message storage and chatbot engine.
-    All messages are automatically saved.
     """
 
     def __init__(self, chatbot_engine):
         self.chatbot_engine = chatbot_engine
-        self.message_service = ChatMessageService()
+
+        repo = ChatMessageRepository(get_mongo_db())
+        self.message_service = ChatMessageService(repo)
 
     def handle_message(
         self,
@@ -19,7 +21,6 @@ class ChatConversationService:
         user_message: str
     ) -> str:
 
-        # Save user message
         self.message_service.save_message(
             chatbot_id=chatbot_id,
             session_id=session_id,
@@ -27,14 +28,12 @@ class ChatConversationService:
             message=user_message
         )
 
-        # Generate reply
         result = self.chatbot_engine.reply(user_message)
         if isinstance(result, tuple):
             reply, intent = result
         else:
             reply, intent = result, None
 
-        # Save bot reply
         self.message_service.save_message(
             chatbot_id=chatbot_id,
             session_id=session_id,

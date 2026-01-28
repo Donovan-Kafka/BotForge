@@ -1,14 +1,11 @@
-from backend.infrastructure.mongodb.mongo_client import get_mongo_db
-from backend.data_access.ChatMessages.chatMessages import ChatMessageRepository
 from backend.infrastructure.mongodb.chat_messages import ChatMessage
-
 
 class ChatMessageService:
     """
     For storing chat messages and retrieving conversation history.
     """
-    def __init__(self):
-        self.repo = ChatMessageRepository(get_mongo_db())
+    def __init__(self, repo):
+        self.repo = repo
 
     def save_message(
         self,
