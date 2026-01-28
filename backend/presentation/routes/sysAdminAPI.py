@@ -80,7 +80,7 @@ def list_feedback_candidates():
             "sender_role_name": role_name,
             "group": group,
             "rating": fb.rating,
-            "title": fb.title,
+            "purpose": fb.purpose,
             "content": fb.content,
             "is_testimonial": bool(fb.is_testimonial),
             "creation_date": fb.creation_date.isoformat() if fb.creation_date else None

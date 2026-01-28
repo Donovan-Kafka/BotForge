@@ -10,7 +10,7 @@ interface SubmitFeedbackProps {
 
 export const SubmitFeedback: React.FC<SubmitFeedbackProps> = ({ onBack, user }) => {
     const [rating, setRating] = useState(0);
-    const [title, setTitle] = useState('');
+    const [purpose, setPurpose] = useState('');
     const [content, setContent] = useState('');
 
     const [isLoading, setIsLoading] = useState(false);
@@ -21,8 +21,8 @@ export const SubmitFeedback: React.FC<SubmitFeedbackProps> = ({ onBack, user }) 
         setError(null);
 
         // Validation
-        if (!title.trim()) {
-            setError("Please enter a feedback purpose/title.");
+        if (!purpose.trim()) {
+            setError("Please enter a feedback purpose.");
             return;
         }
         if (!content.trim()) {
@@ -43,7 +43,7 @@ export const SubmitFeedback: React.FC<SubmitFeedbackProps> = ({ onBack, user }) 
         try {
             const res = await feedbackService.submitFeedback({
                 sender_id: user.user_id,
-                title: title,
+                purpose: purpose,
                 rating: rating,
                 content: content
             });
@@ -51,7 +51,7 @@ export const SubmitFeedback: React.FC<SubmitFeedbackProps> = ({ onBack, user }) 
             if (res.ok) {
                 setSuccess(true);
                 // Optional: Reset form or auto-back
-                setTitle('');
+                setPurpose('');
                 setContent('');
                 setRating(0);
             } else {
@@ -96,8 +96,8 @@ export const SubmitFeedback: React.FC<SubmitFeedbackProps> = ({ onBack, user }) 
                 <label className="block text-sm font-bold text-gray-700 mb-3">Feedback Purpose</label>
                 <input
                     type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
+                    value={purpose}
+                    onChange={(e) => setPurpose(e.target.value)}
                     placeholder="e.g. Bug Report, Feature Request"
                     className="w-full border border-gray-300 rounded-lg py-2 px-4 text-gray-800 text-sm bg-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400"
                 />

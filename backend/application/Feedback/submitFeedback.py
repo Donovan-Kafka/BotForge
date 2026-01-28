@@ -16,7 +16,7 @@ class SubmitFeedbackUseCase:
 
     def execute(self, payload: dict):
         sender_id = payload.get("sender_id")
-        title = (payload.get("title") or "").strip()
+        purpose = (payload.get("purpose") or "").strip()
         content = (payload.get("content") or "").strip()
         rating = payload.get("rating")
 
@@ -27,8 +27,8 @@ class SubmitFeedbackUseCase:
         if not isinstance(sender_id, int):
             return {"ok": False, "error": "sender_id must be an integer."}
 
-        if not title:
-            return {"ok": False, "error": "Title is required."}
+        if not purpose:
+            return {"ok": False, "error": "Purpose is required."}
 
         if not content:
             return {"ok": False, "error": "Content is required."}
@@ -45,7 +45,7 @@ class SubmitFeedbackUseCase:
 
         feedback = self.feedback_repo.create(
             sender_id=sender_id,
-            title=title,
+            purpose=purpose,
             rating=rating,
             content=content
         )

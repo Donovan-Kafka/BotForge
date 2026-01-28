@@ -13,7 +13,7 @@ def submit_feedback():
     Body:
     {
         "sender_id": 1,
-        "title": "Bug Report",
+        "purpose": "Bug Report",
         "rating": 4,
         "content": "The chatbot works well but lags occasionally."
     }

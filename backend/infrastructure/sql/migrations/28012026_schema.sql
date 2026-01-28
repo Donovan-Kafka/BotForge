@@ -1,9 +1,10 @@
 -- SQL Schema for PostgreSQL
-DROP TABLE IF EXISTS landing_image CASCADE;
+-- before splitting org tables into specific industry types
+
 DROP TABLE IF EXISTS featured_video CASCADE;
 DROP TABLE IF EXISTS analytics CASCADE;
-DROP TABLE IF EXISTS chat_message CASCADE;
 DROP TABLE IF EXISTS chatbot CASCADE;
+DROP TABLE IF EXISTS chat_message CASCADE;
 DROP TABLE IF EXISTS feedback CASCADE;
 DROP TABLE IF EXISTS notification CASCADE;
 DROP TABLE IF EXISTS faq CASCADE;
@@ -13,27 +14,19 @@ DROP TABLE IF EXISTS org_role_permission CASCADE;
 DROP TABLE IF EXISTS org_permission CASCADE;
 DROP TABLE IF EXISTS org_role CASCADE;
 DROP TABLE IF EXISTS personality CASCADE;
-DROP TABLE IF EXISTS organisation_retail CASCADE;
-DROP TABLE IF EXISTS organisation_education CASCADE;
-DROP TABLE IF EXISTS organisation_restaurant CASCADE;
 DROP TABLE IF EXISTS organisation CASCADE;
 DROP TABLE IF EXISTS subscription_features CASCADE;
 DROP TABLE IF EXISTS feature CASCADE;
 DROP TABLE IF EXISTS subscription CASCADE;
 DROP TABLE IF EXISTS system_role CASCADE;
 
--- =========================
 -- system role (platform level)
--- =========================
 CREATE TABLE system_role (
     system_role_id INT PRIMARY KEY, -- 0: sys_admin, 1: app_user
     name VARCHAR(50) NOT NULL UNIQUE,
     description VARCHAR(255)
 );
 
--- =========================
--- subscription & features
--- =========================
 CREATE TABLE subscription (
     subscription_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
@@ -58,13 +51,11 @@ CREATE TABLE subscription_features (
     CHECK (display_order IS NULL OR display_order BETWEEN 1 AND 3)
 );
 
--- =========================
--- organisation (main table)
--- =========================
+
 CREATE TABLE organisation (
     organisation_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
-    industry VARCHAR(50) NOT NULL, -- e.g. restaurant, education, retail
+    industry VARCHAR(50),
     subscription_id INT,
     description TEXT,
     location VARCHAR(255),
@@ -74,14 +65,6 @@ CREATE TABLE organisation (
     contact_phone VARCHAR(50),
     website_url VARCHAR(255),
     business_hours VARCHAR(255),
-    FOREIGN KEY (subscription_id) REFERENCES subscription(subscription_id)
-);
-
--- =========================
--- Type: restaurant
--- =========================
-CREATE TABLE organisation_restaurant (
-    organisation_id INT PRIMARY KEY,
     cuisine_type VARCHAR(255),
     restaurant_style VARCHAR(100),
     dining_options VARCHAR(255),
@@ -90,14 +73,6 @@ CREATE TABLE organisation_restaurant (
     price_range VARCHAR(10),
     seating_capacity INT,
     specialties TEXT,
-    FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id) ON DELETE CASCADE
-);
-
--- =========================
--- type: education
--- =========================
-CREATE TABLE organisation_education (
-    organisation_id INT PRIMARY KEY,
     institution_type VARCHAR(100),
     target_audience VARCHAR(255),
     course_types VARCHAR(255),
@@ -106,14 +81,6 @@ CREATE TABLE organisation_education (
     application_link VARCHAR(255),
     response_time VARCHAR(100),
     key_programs TEXT,
-    FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id) ON DELETE CASCADE
-);
-
--- =========================
--- type: retail
--- =========================
-CREATE TABLE organisation_retail (
-    organisation_id INT PRIMARY KEY,
     retail_type VARCHAR(100),
     product_categories VARCHAR(255),
     has_physical_store BOOLEAN DEFAULT TRUE,
@@ -124,17 +91,15 @@ CREATE TABLE organisation_retail (
     warranty_info TEXT,
     payment_methods VARCHAR(255),
     promotions_note TEXT,
-    FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id) ON DELETE CASCADE
+    FOREIGN KEY (subscription_id) REFERENCES subscription(subscription_id)
 );
 
--- =========================
--- org roles & permissions
--- =========================
 CREATE TABLE org_role (
     org_role_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     organisation_id INT NOT NULL,
     name VARCHAR(50) NOT NULL,
     description VARCHAR(255),
+
     FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id),
     UNIQUE (organisation_id, name)
 );
@@ -153,9 +118,6 @@ CREATE TABLE org_role_permission (
     FOREIGN KEY (org_permission_id) REFERENCES org_permission(org_permission_id) ON DELETE CASCADE
 );
 
--- =========================
--- personality
--- =========================
 CREATE TABLE personality (
     personality_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
@@ -163,16 +125,14 @@ CREATE TABLE personality (
     type VARCHAR(50)
 );
 
--- =========================
--- application user
--- =========================
 CREATE TABLE app_user (
     user_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
     status BOOLEAN DEFAULT FALSE,
-    system_role_id INT NOT NULL,
+
+    system_role_id INT,
     org_role_id INT,
     organisation_id INT,
 
@@ -181,14 +141,11 @@ CREATE TABLE app_user (
     FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id),
 
     CHECK (
-        (system_role_id = 0 AND org_role_id IS NULL AND organisation_id IS NULL)
-     OR (system_role_id = 1 AND org_role_id IS NOT NULL AND organisation_id IS NOT NULL)
+        (system_role_id IS NOT NULL AND org_role_id IS NULL AND organisation_id IS NULL)
+     OR (system_role_id IS NULL AND org_role_id IS NOT NULL AND organisation_id IS NOT NULL)
     )
 );
 
--- =========================
--- invitation
--- =========================
 CREATE TABLE invitation (
     invitation_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     email VARCHAR(100) NOT NULL,
@@ -201,17 +158,17 @@ CREATE TABLE invitation (
     FOREIGN KEY (invited_by_user_id) REFERENCES app_user(user_id)
 );
 
--- =========================
--- FAQ
--- =========================
+
 CREATE TABLE faq (
     faq_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     question VARCHAR(255) NOT NULL,
     answer TEXT NOT NULL,
-    status SMALLINT NOT NULL DEFAULT 0,
+    status SMALLINT NOT NULL DEFAULT 0, -- 0: active, 1: inactive
     display_order INT NOT NULL DEFAULT 0,
+    user_id INT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES app_user(user_id)
 );
 
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -227,9 +184,7 @@ BEFORE UPDATE ON faq
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
--- =========================
--- notification
--- =========================
+
 CREATE TABLE notification (
     message_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     title VARCHAR(100) NOT NULL,
@@ -240,13 +195,10 @@ CREATE TABLE notification (
     FOREIGN KEY (user_id) REFERENCES app_user(user_id)
 );
 
--- =========================
--- feedback
--- =========================
 CREATE TABLE feedback (
     feedback_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     sender_id INT NOT NULL,
-    purpose VARCHAR(100),
+    title VARCHAR(100),
     rating INT CHECK (rating BETWEEN 1 AND 5),
     content TEXT,
     creation_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -254,9 +206,6 @@ CREATE TABLE feedback (
     FOREIGN KEY (sender_id) REFERENCES app_user(user_id)
 );
 
--- =========================
--- chatbot
--- =========================
 CREATE TABLE chatbot (
     bot_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
@@ -272,9 +221,6 @@ CREATE TABLE chatbot (
     FOREIGN KEY (personality_id) REFERENCES personality(personality_id)
 );
 
--- =========================
--- analytics
--- =========================
 CREATE TABLE analytics (
     analytic_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     bot_id INT NOT NULL,
@@ -288,9 +234,6 @@ CREATE TABLE analytics (
     UNIQUE (bot_id, date)
 );
 
--- =========================
--- chat messages
--- =========================
 CREATE TABLE chat_message (
     message_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     organisation_id INT NOT NULL,
@@ -307,26 +250,10 @@ CREATE TABLE chat_message (
     FOREIGN KEY (sender_user_id) REFERENCES app_user(user_id)
 );
 
--- =======================================
--- featured video meant for 1 video only
--- ======================================= 
 CREATE TABLE featured_video (
     id SMALLINT PRIMARY KEY CHECK (id = 1),
     url VARCHAR(255),
     title VARCHAR(100),
     description VARCHAR(255),
     updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- =======================================
--- landing page images
--- ======================================= 
-CREATE TABLE landing_image (
-    image_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    image_url VARCHAR(255) NOT NULL,
-    alt_text VARCHAR(150),
-    display_order SMALLINT DEFAULT 0,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

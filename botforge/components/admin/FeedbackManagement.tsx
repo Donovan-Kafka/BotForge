@@ -10,7 +10,7 @@ interface FeedbackCandidate {
   sender_role_name: string;
   group: string;
   rating: number;
-  title: string;
+  purpose: string;
   content: string;
   is_testimonial: boolean;
   creation_date: string;
@@ -72,7 +72,7 @@ export const FeedbackManagement: React.FC = () => {
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2 font-medium text-gray-800 text-sm">
                       <FileText className="text-gray-400 w-4 h-4" />
-                      <span className="truncate w-32">{c.title || '(No Title)'}</span>
+                      <span className="truncate w-32">{c.purpose || '(No Title)'}</span>
                     </div>
                     {c.is_testimonial && <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />}
                   </div>
@@ -92,7 +92,7 @@ export const FeedbackManagement: React.FC = () => {
                 <div className="p-8 flex-1 overflow-y-auto">
                   <div className="flex justify-between items-center mb-6">
                     <div>
-                      <h3 className="text-2xl font-bold text-gray-900 mb-1">{selectedFeedback.title}</h3>
+                      <h3 className="text-2xl font-bold text-gray-900 mb-1">{selectedFeedback.purpose}</h3>
                       <div className="text-sm text-gray-500 flex gap-2 items-center">
                         <span>From: <strong className="text-gray-700">{selectedFeedback.sender_username}</strong></span>
                         <span className="w-1 h-1 bg-gray-300 rounded-full"></span>

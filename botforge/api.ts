@@ -168,7 +168,7 @@ export const sysAdminService = {
 };
 
 export const feedbackService = {
-    async submitFeedback(data: { sender_id: number; title: string; rating: number; content: string }) {
+    async submitFeedback(data: { sender_id: number; purpose: string; rating: number; content: string }) {
         return api.post<any>('/api/feedback', data);
     }
 };

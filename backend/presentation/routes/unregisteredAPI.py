@@ -134,7 +134,7 @@ def get_testimonials():
             "role": "ORG_ADMIN",
             "author": sender.username if sender else "Anonymous",
             "rating": orgadmin_fb.rating,
-            "title": orgadmin_fb.title,
+            "purpose": orgadmin_fb.purpose,
             "content": orgadmin_fb.content,
             "date": orgadmin_fb.creation_date.isoformat() if orgadmin_fb.creation_date else None
         })
@@ -148,7 +148,7 @@ def get_testimonials():
             "role": "STAFF",
             "author": sender.username if sender else "Anonymous",
             "rating": staff_fb.rating,
-            "title": staff_fb.title,
+            "purpose": staff_fb.purpose,
             "content": staff_fb.content,
             "date": staff_fb.creation_date.isoformat() if staff_fb.creation_date else None
         })

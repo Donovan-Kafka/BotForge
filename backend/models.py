@@ -145,7 +145,7 @@ class Feedback(db.Model):
 
     feedback_id = db.Column(db.Integer, primary_key=True)
     sender_id = db.Column(db.Integer, db.ForeignKey("app_user.user_id"), nullable=False)
-    title = db.Column(db.String(100))
+    purpose = db.Column(db.String(100))
     rating = db.Column(db.Integer)
     content = db.Column(db.Text)
     creation_date = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))

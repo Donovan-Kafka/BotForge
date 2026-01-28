@@ -46,6 +46,29 @@ INSERT INTO organisation (name, industry, subscription_id) VALUES
 ('Retailers', 'Retail', 2),
 ('Edu', 'Education', 1);
 
+-- organisation 1: F&B (Restaurant profile)
+INSERT INTO organisation_restaurant (
+    organisation_id,
+    cuisine_type,
+    restaurant_style,
+    dining_options,
+    supports_reservations,
+    reservation_link,
+    price_range,
+    seating_capacity,
+    specialties
+) VALUES (
+    1,
+    'Indian / Local',
+    'Casual Dining',
+    'Dine-in, Takeaway',
+    TRUE,
+    'https://spplace.com/',
+    '$$',
+    60,
+    'Prata, Thosai, Teh Tarik'
+);
+
 
 INSERT INTO org_role (organisation_id, name, description) VALUES
 (1, 'ORG_ADMIN', 'Organisation administrator'),
@@ -81,44 +104,29 @@ INSERT INTO personality (name, description, type) VALUES
 ('Professional & Formal', 'Polite and business-like', 'Formal');
 
 -- system admin (no organisation id)
-INSERT INTO app_user (
-  username, password, email, status,
-  system_role_id, org_role_id, organisation_id
-) VALUES
-('Admin', 'pw123', 'admin@test.com', TRUE, 0, NULL, NULL);
+INSERT INTO app_user (username, password, email, status, system_role_id, org_role_id, organisation_id) VALUES
+('Admin', 'scrypt:32768:8:1$gNx6ufk63R9woldo$982e68d21720567615cee04c8ac7ad53050139c235606866239321e53401eb3e5f8e5fe123986e30bc7acabac722114e5cf90cc23203e1670f9e97a04b947c06', 'admin@test.com', TRUE, 0, NULL, NULL);
 
--- app users, org users.
-INSERT INTO app_user (username, password, email, status, system_role_id, org_role_id, organisation_id)
-SELECT 'bob','pw123','bob@test.com', FALSE, NULL, r.org_role_id, r.organisation_id
-FROM org_role r
-WHERE r.organisation_id=1 AND r.name='ORG_ADMIN';
+-- app user, org user.
+INSERT INTO app_user (username, password, email, status, system_role_id, org_role_id, organisation_id) VALUES
+('Alice', 'scrypt:32768:8:1$OWqAGgPDlwkPpNOf$e2c2ab94584554973418ad6f0044b280a5aa495e8a141cb65e35c2b781e9ef2b18844124a92fc310797ed7a139010c4883c221f3f8a13ea81bdf4d42f50d59df', 'alice@test.com', TRUE, 1, 1, 1);
 
-INSERT INTO app_user (username, password, email, status, system_role_id, org_role_id, organisation_id)
-SELECT 'carol','pw123','carol@test.com', TRUE, NULL, r.org_role_id, r.organisation_id
-FROM org_role r
-WHERE r.organisation_id=2 AND r.name='STAFF';
+-- app user, staff user
+INSERT INTO app_user (username, password, email, status, system_role_id, org_role_id, organisation_id) VALUES
+('Bob', 'scrypt:32768:8:1$OWqAGgPDlwkPpNOf$e2c2ab94584554973418ad6f0044b280a5aa495e8a141cb65e35c2b781e9ef2b18844124a92fc310797ed7a139010c4883c221f3f8a13ea81bdf4d42f50d59df', 'bob@test.com', TRUE, 1, 2, 1);
 
 
-INSERT INTO faq (question, answer, status, display_order, user_id) VALUES
-('How does the conversation limit work?', 'Each subscription plan has a monthly conversation limit...', 0, 1, 1),
-('Do I need technical knowledge to build a chatbot?', 'No technical knowledge is required...', 0, 2, 1),
-('Can I customize the chatbot to fit my company branding?', 'Yes, you can customize...', 0, 3, 1),
-('What integrations are supported?', 'The chatbot supports integrations...', 0, 4, 1),
-('Is my data secure?', 'We prioritize data security...', 0, 5, 1);
+INSERT INTO faq (question, answer, status, display_order) VALUES
+('How does the conversation limit work?', 'Each subscription plan has a monthly conversation limit...', 0, 1),
+('Do I need technical knowledge to build a chatbot?', 'No technical knowledge is required...', 0, 2),
+('Can I customize the chatbot to fit my company branding?', 'Yes, you can customize...', 0, 3),
+('What integrations are supported?', 'The chatbot supports integrations...', 0, 4),
+('Is my data secure?', 'We prioritize data security...', 0, 5);
 
 INSERT INTO notification (title, content, is_read, user_id) VALUES
-('Welcome!', 'Welcome to the platform, Admin.', FALSE, 1),
+('Notice', 'Feedback Successfully Sent.', FALSE, 2),
 ('Reminder', 'Complete your profile, Bob.', FALSE, 2);
 
-INSERT INTO feedback (sender_id, category, rating, content) VALUES
-(1, 'Outstanding Experience', 5, 'The chatbot delivered an excellent experience with accurate responses and great usability.'),
-(3, 'Reliable and Professional', 4, 'Consistent professionalism and quality output.');
-
-INSERT INTO chatbot (name, description, organisation_id, personality_id) VALUES
-('SupportBot', 'Helps with customer support', 1, 1),
-('EduBot', 'Helps with learning', 3, 3);
-
-
-INSERT INTO analytics (bot_id, date, total_messages, avg_response_time, user_satisfaction, peak_hour, top_intents) VALUES
-(1, '2026-01-06', 150, 2.5, 4.8, 15, '["greeting","faq"]'),
-(2, '2026-01-06', 80, 3.2, 4.2, 10, '["lesson_query","quiz"]');
+INSERT INTO feedback (sender_id, purpose, rating, content) VALUES
+(3, 'Overall Experience', 5, 'The chatbot delivered an excellent experience with accurate responses and great usability.'),
+(2, 'Overall Experience', 4, 'Consistent professionalism and quality output.');

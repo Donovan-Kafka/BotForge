@@ -7,14 +7,14 @@ class FeedbackRepository:
     def create(
         self,
         sender_id: int,
-        title: str,
+        purpose: str,
         rating: int,
         content: str,
         is_testimonial: bool = False
     ):
         feedback = Feedback(
             sender_id=sender_id,
-            title=title,
+            purpose=purpose,
             rating=rating,
             content=content,
             is_testimonial=is_testimonial
