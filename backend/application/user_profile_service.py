@@ -1,12 +1,18 @@
 from werkzeug.security import check_password_hash
 from backend.data_access.Users.users import UserRepository
 from backend.models import AppUser
+from backend.application.notification_service import NotificationService
 
 
 class UserProfileService:
 
-    def __init__(self, user_repo: UserRepository):
+    def __init__(
+        self,
+        user_repo: UserRepository,
+        notification_service: NotificationService
+    ):
         self.user_repo = user_repo
+        self.notification_service = notification_service
 
     def update_profile(
         self,
@@ -29,7 +35,16 @@ class UserProfileService:
                 raise ValueError("Email cannot be empty")
             user.email = email.strip().lower()
 
-        return self.user_repo.update_profile(user)
+        updated_user = self.user_repo.update_profile(user)
+
+        # Notify user
+        self.notification_service.notify_user(
+            user_id=updated_user.user_id,
+            title="Profile updated",
+            content="Your profile information has been updated successfully."
+        )
+
+        return updated_user
 
     def change_password(
         self,

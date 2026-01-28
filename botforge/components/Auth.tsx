@@ -257,12 +257,9 @@ export const Auth: React.FC<AuthProps> = ({ view, onLoginSuccess }) => {
               className="w-full border-2 border-gray-400 rounded p-2 focus:border-blue-500 focus:outline-none bg-white"
             >
               <option value="">Select Industry</option>
-              <option value="Technology">Technology</option>
-              <option value="Finance">Finance</option>
-              <option value="Healthcare">Healthcare</option>
+              <option value="F&B">F&B</option>
               <option value="Retail">Retail</option>
               <option value="Education">Education</option>
-              <option value="Other">Other</option>
             </select>
           </div>
 

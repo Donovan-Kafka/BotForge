@@ -1,18 +1,22 @@
 from backend.data_access.Feedback.feedback import FeedbackRepository
 from backend.data_access.Users.users import UserRepository
+from backend.application.notification_service import NotificationService
+
 
 class SubmitFeedbackUseCase:
     """
-    submit feedback from user, ensures all fields are not empty
+    Submit feedback from user, ensures all fields are not empty
     """
 
     def __init__(
         self,
         feedback_repo: FeedbackRepository,
-        user_repo: UserRepository
+        user_repo: UserRepository,
+        notification_service: NotificationService
     ):
         self.feedback_repo = feedback_repo
         self.user_repo = user_repo
+        self.notification_service = notification_service
 
     def execute(self, payload: dict):
         sender_id = payload.get("sender_id")
@@ -48,6 +52,13 @@ class SubmitFeedbackUseCase:
             purpose=purpose,
             rating=rating,
             content=content
+        )
+
+        # Notify sender
+        self.notification_service.notify_user(
+            user_id=sender_id,
+            title="Feedback submitted",
+            content="Thank you for your feedback. We appreciate your input."
         )
 
         return {

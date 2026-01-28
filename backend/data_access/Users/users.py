@@ -24,6 +24,16 @@ class UserRepository:
     def get_org_role(self, role_id: int) -> OrgRole | None:
         return db.session.get(OrgRole, role_id)
 
+    def get_active_app_users(self):
+        return (
+            AppUser.query
+            .filter(
+                AppUser.status.is_(True),
+                AppUser.system_role_id.is_(None)
+            )
+            .all()
+    )
+
     # ---------- UPDATE (Organisation role update.) ----------
 
     def update_org_role(

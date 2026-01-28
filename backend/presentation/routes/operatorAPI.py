@@ -7,12 +7,18 @@ from backend.application.invitation_service import (
     accept_invitation_and_create_operator
 )
 from backend.application.user_profile_service import UserProfileService
+from backend.application.notification_service import NotificationService
 from backend.data_access.Users.users import UserRepository
+from backend.data_access.Notifications.notifications import NotificationRepository
 
 operator_bp = Blueprint("operator", __name__, url_prefix="/api/operator")
 
-profile_service = UserProfileService(UserRepository())
+# ---------- Service wiring ----------
+user_repo = UserRepository()
+notification_repo = NotificationRepository()
+notification_service = NotificationService(notification_repo, user_repo)
 
+profile_service = UserProfileService(user_repo, notification_service)
 
 # =========================
 # Invitation & registration
@@ -37,12 +43,14 @@ def operator_register():
     if len(password) < 8:
         return jsonify({"ok": False, "error": "Password must be at least 8 characters."}), 400
 
-    # Hash password here, then pass to service
     payload["password_hash"] = generate_password_hash(password)
 
-    result = accept_invitation_and_create_operator(payload)
-    return jsonify(result), (200 if result.get("ok") else 400)
+    result = accept_invitation_and_create_operator(
+        payload,
+        notification_service
+    )
 
+    return jsonify(result), (200 if result.get("ok") else 400)
 
 # ================================
 # Operator: manage account section

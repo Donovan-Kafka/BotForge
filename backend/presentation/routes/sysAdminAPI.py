@@ -273,7 +273,6 @@ def list_faq_admin():
                 "answer": f.answer,
                 "status": f.status,
                 "display_order": f.display_order,
-                "user_id": f.user_id,
                 "created_at": f.created_at.isoformat() if f.created_at else None,
                 "updated_at": f.updated_at.isoformat() if f.updated_at else None,
             } for f in rows

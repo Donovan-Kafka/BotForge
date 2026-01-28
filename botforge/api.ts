@@ -124,8 +124,7 @@ export const sysAdminService = {
 
     async updateUserRole(userId: number, data: { type: 'system' | 'org'; system_role_id?: number; org_role_id?: number }) {
         return api.put<any>(`/api/sysadmin/users/${userId}/role`, data);
-    }
-};
+    },
 
     // FAQ Management
     async listFaqs() {

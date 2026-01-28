@@ -2,6 +2,7 @@ import secrets
 from sqlalchemy.exc import IntegrityError
 from backend import db
 from backend.models import Invitation, AppUser, OrgRole
+from backend.application.notification_service import NotificationService
 
 STATUS_PENDING = 0
 STATUS_ACCEPTED = 1
@@ -79,7 +80,7 @@ def validate_invitation_token(token: str) -> dict:
         }
     }
 
-def accept_invitation_and_create_operator(payload: dict) -> dict:
+def accept_invitation_and_create_operator(payload: dict, notification_service) -> dict:
     token = (payload.get("token") or "").strip()
     username = (payload.get("username") or "").strip()
     password_hash = payload.get("password_hash")  # 
@@ -134,6 +135,12 @@ def accept_invitation_and_create_operator(payload: dict) -> dict:
         db.session.rollback()
         return {"ok": False, "error": "Failed to create operator account (integrity error)."}
 
+    # Notify org admins ONLY after successful verification
+    notification_service.notify_organisation(
+        organisation_id=inv.organisation_id,
+        title="New staff joined",
+        content=f"{user.username} has joined your organisation."
+    )
     return {
         "ok": True,
         "message": "Operator account created.",

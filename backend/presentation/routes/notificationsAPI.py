@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from backend.application.notification_service import NotificationService
 from backend.data_access.Notifications.notifications import NotificationRepository
+from backend.data_access.Users.users import UserRepository
 
 notifications_bp = Blueprint(
     "notifications",
@@ -8,8 +9,9 @@ notifications_bp = Blueprint(
     url_prefix="/api/notifications"
 )
 
-service = NotificationService(NotificationRepository())
-
+user_repo = UserRepository()
+notification_repo = NotificationRepository()
+service = NotificationService(notification_repo, user_repo)
 
 @notifications_bp.get("/")
 def list_notifications():

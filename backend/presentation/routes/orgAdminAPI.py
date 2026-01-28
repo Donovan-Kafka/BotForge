@@ -6,11 +6,17 @@ from backend.application.user_service import UserService
 from backend.application.user_profile_service import UserProfileService
 from backend.data_access.Users.users import UserRepository
 from backend.models import Organisation, Chatbot, Personality, ChatMessage, AppUser
+from backend.application.notification_service import NotificationService
+from backend.data_access.Notifications.notifications import NotificationRepository
 
 org_admin_bp = Blueprint("org_admin", __name__, url_prefix="/api/org-admin")
 
-user_service = UserService(UserRepository())
-profile_service = UserProfileService(UserRepository())
+user_repo = UserRepository()
+notification_repo = NotificationRepository()
+notification_service = NotificationService(notification_repo, user_repo)
+
+user_service = UserService(user_repo)
+profile_service = UserProfileService(user_repo, notification_service)
 
 def _get_or_create_chatbot(organisation_id: int) -> Chatbot | None:
     org = Organisation.query.get(organisation_id)

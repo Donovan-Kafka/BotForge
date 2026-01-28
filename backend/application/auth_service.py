@@ -5,6 +5,9 @@ from flask import current_app
 
 from backend import db
 from backend.models import Organisation, AppUser, OrgRole
+from backend.application.notification_service import NotificationService
+from backend.data_access.Notifications.notifications import NotificationRepository
+from backend.data_access.Users.users import UserRepository
 
 
 def _serializer():
@@ -32,6 +35,12 @@ def register_org_admin(payload: dict) -> dict:
         return {"ok": False, "error": "Password must be at least 8 characters."}
 
     # Create org + user (status=false until verified)
+    raw_industry = (payload.get("industry") or "").strip().lower()
+    industry_map = {"f&b": "restaurant", "retail": "retail", "education": "education",}
+
+    industry = industry_map.get(raw_industry)
+    if not industry:
+        return {"ok": False, "error": "Invalid industry."}
     org = Organisation(name=company, industry=industry)
     db.session.add(org)
     db.session.flush()  
@@ -72,7 +81,7 @@ def register_org_admin(payload: dict) -> dict:
         username=username,
         email=email,
         password=generate_password_hash(password),
-        system_role_id=None,
+        system_role_id=1,
         org_role_id=org_admin_role.org_role_id,
         organisation_id=org.organisation_id,
         status=False
