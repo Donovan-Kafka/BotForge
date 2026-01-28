@@ -114,6 +114,18 @@ export const sysAdminService = {
     async deleteFeature(featureId: number) {
         return api.delete<any>(`/api/sysadmin/features/${featureId}`);
     },
+    async listUsers() {
+        return api.get<any>('/api/sysadmin/users');
+    },
+
+    async updateUserStatus(userId: number, status: boolean) {
+        return api.put<any>(`/api/sysadmin/users/${userId}/status`, { status });
+    },
+
+    async updateUserRole(userId: number, data: { type: 'system' | 'org'; system_role_id?: number; org_role_id?: number }) {
+        return api.put<any>(`/api/sysadmin/users/${userId}/role`, data);
+    }
+};
 
     // FAQ Management
     async listFaqs() {
