@@ -52,6 +52,7 @@ function AppContent({ user, setUser, handleLoginSuccess }: { user: User | null, 
 
   const handleLogout = () => {
     setUser(null);
+    localStorage.removeItem('user'); // Clear storage on logout
     navigate('/login');
   };
 
@@ -68,14 +69,20 @@ function AppContent({ user, setUser, handleLoginSuccess }: { user: User | null, 
           <Route path="/faq" element={<FAQPage />} />
           <Route path="/login" element={<Auth view={PageView.LOGIN} onLoginSuccess={(u) => {
             handleLoginSuccess(u);
+            
+            // REDIRECTION LOGIC START
             const admin = u.username === 'SystemAdmin' || u.role_id === 0 || u.system_role_id === 0;
+            
             if (admin) {
               navigate('/system-admin');
             } else if (u.organisation_id && u.organisation_id > 0) {
+              // If user already belongs to an organization, go to dashboard
               navigate('/dashboard');
             } else {
+              // NEW CHANGE: If no organisation_id (new user), force redirect to profiling
               navigate('/create-profile');
             }
+            // REDIRECTION LOGIC END
           }} />} />
           <Route path="/register" element={<Auth view={PageView.REGISTER} onLoginSuccess={() => { }} />} />
           <Route path="/activated" element={<Auth view={PageView.ACTIVATED} onLoginSuccess={() => navigate('/login')} />} />
@@ -89,11 +96,11 @@ function AppContent({ user, setUser, handleLoginSuccess }: { user: User | null, 
           isAdmin ? <SystemAdminDashboard onLogout={handleLogout} onBackToDashboard={() => navigate('/dashboard')} /> : <Navigate to="/dashboard" />
         } />
 
+        {/* Ensure the route exists for the profile page */}
         <Route path="/create-profile" element={
           user ? <CreateCompanyProfile onSuccess={() => navigate('/pricing')} /> : <Navigate to="/login" />
         } />
 
-        {/* Fallback */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </>
@@ -101,11 +108,15 @@ function AppContent({ user, setUser, handleLoginSuccess }: { user: User | null, 
 }
 
 export default function App() {
-  const [user, setUser] = useState<User | null>(null);
+  // Initialize state from localStorage so the app remembers the user on refresh
+  const [user, setUser] = useState<User | null>(() => {
+    const saved = localStorage.getItem('user');
+    return saved ? JSON.parse(saved) : null;
+  });
 
   const handleLoginSuccess = (user: User) => {
-    console.log("[DEBUG] handleLoginSuccess user:", user);
     setUser(user);
+    localStorage.setItem('user', JSON.stringify(user));
   };
 
   return (
