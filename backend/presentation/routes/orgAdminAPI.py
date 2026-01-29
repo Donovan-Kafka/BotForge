@@ -447,6 +447,12 @@ def update_chatbot_settings():
 
     db.session.commit()
 
+    notification_service.notify_organisation_users(
+        organisation_id=organisation_id,
+        title="Chatbot settings updated",
+        content="Chatbot settings were updated by your organisation admin.",
+    )
+
     return jsonify({
         "ok": True,
         "chatbot": {

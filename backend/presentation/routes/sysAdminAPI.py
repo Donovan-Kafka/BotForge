@@ -4,6 +4,9 @@ from backend import db
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func, case
 from datetime import datetime, timedelta, timezone
+from backend.application.notification_service import NotificationService
+from backend.data_access.Notifications.notifications import NotificationRepository
+from backend.data_access.Users.users import UserRepository
 
 
 sysadmin_bp = Blueprint("sysadmin", __name__)
@@ -515,16 +518,21 @@ def update_user_role(user_id):
     if not u:
         return jsonify({"ok": False, "error": "User not found."}), 404
 
+    old_system_role = u.system_role_id
+    old_org_role = u.org_role_id
+
     try:
+        role_desc = "Role updated"
+
         if role_type == "system":
             system_role_id = payload.get("system_role_id")
             if system_role_id is None:
                 return jsonify({"ok": False, "error": "system_role_id is required for type=system."}), 400
 
-            # enforce system user shape
             u.system_role_id = int(system_role_id)
             u.org_role_id = None
             u.organisation_id = None
+            role_desc = "System role updated"
 
         elif role_type == "org":
             org_role_id = payload.get("org_role_id")
@@ -535,16 +543,13 @@ def update_user_role(user_id):
             if not org_role:
                 return jsonify({"ok": False, "error": "Org role not found."}), 404
 
-            # block cross-org role assignment (prevents transferring users)
             if u.organisation_id is not None and org_role.organisation_id != u.organisation_id:
-                return jsonify({
-                    "ok": False,
-                    "error": "Cannot assign role from a different organisation."
-                }), 400
+                return jsonify({"ok": False, "error": "Cannot assign role from a different organisation."}), 400
 
             u.system_role_id = None
             u.org_role_id = org_role.org_role_id
             u.organisation_id = org_role.organisation_id
+            role_desc = f"Organisation role updated to {org_role.name}"
 
         else:
             return jsonify({"ok": False, "error": "type must be 'system' or 'org'."}), 400
@@ -554,6 +559,18 @@ def update_user_role(user_id):
     except IntegrityError as e:
         db.session.rollback()
         return jsonify({"ok": False, "error": f"DB constraint failed: {str(e.orig)}"}), 400
+
+    # 🔔 Notify ONLY if changed (after commit is safest)
+    if old_system_role != u.system_role_id or old_org_role != u.org_role_id:
+        notif_service = NotificationService(
+            notification_repo=NotificationRepository(),
+            user_repo=UserRepository()
+        )
+        notif_service.notify_user(
+            user_id=u.user_id,
+            title="Role Updated",
+            content=f"Your role has been updated by a system administrator. ({role_desc})"
+        )
 
     return jsonify({
         "ok": True,

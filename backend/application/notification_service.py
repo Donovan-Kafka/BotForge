@@ -38,6 +38,7 @@ class NotificationService:
 
         users = self.user_repo.get_by_organisation(organisation_id)
 
+        count = 0
         for user in users:
             if user.status:
                 self.notification_repo.create(
@@ -45,6 +46,10 @@ class NotificationService:
                     title=title,
                     content=content
                 )
+                count += 1
+
+        return count
+    
     # notify all active app users
     def notify_all_active_app_users(
         self,
@@ -83,3 +88,4 @@ class NotificationService:
             raise ValueError("Not allowed")
 
         self.notification_repo.delete(notification)
+
