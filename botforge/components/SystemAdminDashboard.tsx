@@ -4,7 +4,7 @@ import { Bot, LogOut } from 'lucide-react';
 import { AdminLogin } from './admin/AdminLogin';
 import { AdminAnalytics } from './admin/AdminAnalytics';
 import { UserManagement } from './admin/UserManagement';
-import { AIModelManagement } from './admin/AIModelManagement';
+// import { AIModelManagement } from './admin/AIModelManagement'; // Removed
 import { SystemMaintenance } from './admin/SystemMaintenance';
 import { FeedbackManagement } from './admin/FeedbackManagement';
 import { PricingManagement } from './admin/PricingManagement';
@@ -20,7 +20,7 @@ export type AdminView =
   | 'login'
   | 'stats'
   | 'user-admin'
-  | 'ai-model'
+  // | 'ai-model' // Removed
   | 'maintenance'
   | 'feedback'
   | 'features'
@@ -92,12 +92,12 @@ export const SystemAdminDashboard: React.FC<SystemAdminDashboardProps> = ({ onLo
             >
               User administration
             </button>
-            <button
+            {/* <button
               onClick={() => setCurrentView('ai-model')}
               className={`px-6 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50 ${currentView === 'ai-model' ? 'bg-gray-100' : 'bg-white'}`}
             >
               AI Model management
-            </button>
+            </button> */}
             <button
               onClick={() => setCurrentView('maintenance')}
               className={`px-6 py-2.5 text-sm font-medium transition-colors hover:bg-gray-50 ${currentView === 'maintenance' ? 'bg-gray-100' : 'bg-white'}`}
@@ -135,7 +135,7 @@ export const SystemAdminDashboard: React.FC<SystemAdminDashboardProps> = ({ onLo
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
           {currentView === 'stats' && <AdminAnalytics />}
           {currentView === 'user-admin' && <UserManagement />}
-          {currentView === 'ai-model' && <AIModelManagement />}
+          {/* {currentView === 'ai-model' && <AIModelManagement />} */}
           {currentView === 'maintenance' && <SystemMaintenance />}
           {currentView === 'feedback' && <FeedbackManagement />}
           {currentView === 'pricing' && <PricingManagement />}

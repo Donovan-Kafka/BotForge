@@ -5,13 +5,11 @@ import { UserRole, User } from '../types';
 import { PricingPage } from './PricingPage';
 
 // Staff Components
-import { CustomizeChatbot as StaffCustomize } from './staff/CustomizeChatbot';
-import { ChatHistory as StaffHistory } from './staff/ChatHistory';
 import { SubmitFeedback as StaffFeedback } from './staff/SubmitFeedback';
 import { ManageAccount as StaffAccount } from './staff/ManageAccount';
 
 // Organisational Admin Components
-import { BuildChatbot } from './organisational-admin/BuildChatbot';
+// Organisational Admin Components
 import { ManageStaff } from './organisational-admin/ManageStaff';
 import { CreateRole } from './organisational-admin/CreateRole';
 import { CustomizeChatbot as AdminCustomize } from './organisational-admin/CustomizeChatbot';
@@ -27,7 +25,9 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLogin, user }) => {
-    const [currentRole, setCurrentRole] = useState<UserRole.ADMIN | UserRole.STAFF>(UserRole.ADMIN);
+    // const [currentRole, setCurrentRole] = useState<UserRole.ADMIN | UserRole.STAFF>(UserRole.ADMIN); // Removed
+    const isOrgAdmin = user?.org_role_id === 1;
+    const isStaff = user?.org_role_id === 2;
     const [activeTab, setActiveTab] = useState<string>('analytics'); // Default to analytics/overview
 
     const [analyticsData, setAnalyticsData] = useState<any>(null);
@@ -220,8 +220,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
                     <Bot className="h-6 w-6 text-white" />
                 </div>
 
-                {/* Switch Role Button */}
-                <div className="relative group">
+                {/* Switch Role Button Removed */}
+                {/* <div className="relative group">
                     <button
                         onClick={() => {
                             const newRole = currentRole === UserRole.ADMIN ? UserRole.STAFF : UserRole.ADMIN;
@@ -236,10 +236,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
                     <div className="absolute left-14 top-2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity z-50">
                         Switch to {currentRole === UserRole.ADMIN ? 'Staff' : 'Admin'}
                     </div>
-                </div>
+                </div> */}
 
                 {/* Subscription Button (Admin Only) */}
-                {currentRole === UserRole.ADMIN && (
+                {isOrgAdmin && (
                     <div className="relative group">
                         <button
                             onClick={() => setActiveTab('subscription')}
@@ -285,7 +285,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
                             <Bot className="h-5 w-5 text-white" />
                         </div>
                         <h1 className="text-xl font-bold text-gray-900 tracking-tight">
-                            BotForge <span className="font-normal text-gray-400">| {currentRole === UserRole.ADMIN ? 'Organisational Admin' : 'Staff'}</span>
+                            BotForge <span className="font-normal text-gray-400">| {isOrgAdmin ? 'Organisational Admin' : 'Staff'}</span>
                         </h1>
                     </div>
 
@@ -302,7 +302,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
                         <div className="flex items-center gap-3">
                             <div className="text-right">
                                 <p className="text-sm font-bold text-gray-900">Hi, {user?.username || 'User'}</p>
-                                <p className="text-xs text-gray-500">{currentRole === UserRole.ADMIN ? 'Org Admin' : 'Staff'}</p>
+                                <p className="text-xs text-gray-500">{isOrgAdmin ? 'Org Admin' : 'Staff'}</p>
                             </div>
                             <div className="h-9 w-9 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
                                 {user?.username?.[0]?.toUpperCase() || 'U'}
@@ -318,14 +318,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
                 {activeTab !== 'subscription' && activeTab !== 'notifications' && activeTab !== 'create-role' && (
                     <div className="px-8 py-6 pb-0 bg-white flex-shrink-0">
                         <div className="flex flex-wrap gap-3">
-                            {currentRole === UserRole.ADMIN && (
+                            {/* Build Chatbot Removed for everyone */}
+                            {/* {currentRole === UserRole.ADMIN && (
                                 <button
                                     onClick={() => setActiveTab('build')}
                                     className={`px-5 py-2 rounded-full text-sm font-medium transition-all border ${activeTab === 'build' ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'}`}
                                 >
                                     Build Chatbot
                                 </button>
-                            )}
+                            )} */}
 
                             <button
                                 onClick={() => setActiveTab('customise')}
@@ -341,7 +342,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
                                 View Chat History
                             </button>
 
-                            {currentRole === UserRole.ADMIN && (
+                            {isOrgAdmin && (
                                 <button
                                     onClick={() => setActiveTab('staff')}
                                     className={`px-5 py-2 rounded-full text-sm font-medium transition-all border ${activeTab === 'staff' ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'}`}
@@ -379,7 +380,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
                     )}
 
                     {/* Subscription Tab (Admin Only) */}
-                    {activeTab === 'subscription' && currentRole === UserRole.ADMIN && (
+                    {activeTab === 'subscription' && isOrgAdmin && (
                         <PricingPage
                             user={user}
                             onSuccess={() => setActiveTab('analytics')}
@@ -387,43 +388,39 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
                     )}
 
                     {/* Admin Specific Tabs */}
-                    {activeTab === 'build' && currentRole === UserRole.ADMIN && (
+                    {/* {activeTab === 'build' && currentRole === UserRole.ADMIN && (
                         <BuildChatbot onBack={() => setActiveTab('analytics')} onNavigateNext={() => setActiveTab('customise')} />
-                    )}
+                    )} */}
 
-                    {activeTab === 'staff' && currentRole === UserRole.ADMIN && (
+                    {activeTab === 'staff' && isOrgAdmin && (
                         <ManageStaff onBack={() => setActiveTab('analytics')} onCreateRole={() => setActiveTab('create-role')} />
                     )}
 
-                    {activeTab === 'create-role' && currentRole === UserRole.ADMIN && (
+                    {activeTab === 'create-role' && isOrgAdmin && (
                         <CreateRole onBack={() => setActiveTab('staff')} />
                     )}
 
                     {/* Shared Tabs (Customise) */}
                     {activeTab === 'customise' && (
-                        currentRole === UserRole.STAFF
-                            ? <StaffCustomize onBack={() => setActiveTab('analytics')} />
-                            : <AdminCustomize onBack={() => setActiveTab('analytics')} organisationId={user?.organisation_id} />
+                        <AdminCustomize onBack={() => setActiveTab('analytics')} organisationId={user?.organisation_id} />
                     )}
 
                     {/* Shared Tabs (History) */}
                     {activeTab === 'history' && (
-                        currentRole === UserRole.STAFF
-                            ? <StaffHistory onBack={() => setActiveTab('analytics')} />
-                            : <AdminHistory onBack={() => setActiveTab('analytics')} organisationId={user?.organisation_id} />
+                        <AdminHistory onBack={() => setActiveTab('analytics')} organisationId={user?.organisation_id} />
                     )}
 
                     {/* Shared Tabs (Feedback) */}
                     {activeTab === 'feedback' && (
-                        currentRole === UserRole.STAFF
+                        isStaff
                             ? <StaffFeedback onBack={() => setActiveTab('analytics')} user={user} />
                             : <AdminFeedback onBack={() => setActiveTab('analytics')} user={user} />
                     )}
 
                     {/* Shared Tabs (Account) */}
                     {activeTab === 'account' && (
-                        currentRole === UserRole.STAFF
-                            ? <StaffAccount onBack={() => setActiveTab('analytics')} role={currentRole} />
+                        isStaff
+                            ? <StaffAccount onBack={() => setActiveTab('analytics')} role={UserRole.STAFF} />
                             : <AdminAccount onBack={() => setActiveTab('analytics')} />
                     )}
                 </main>

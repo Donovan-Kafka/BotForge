@@ -39,15 +39,15 @@ export const PricingPage: React.FC<PricingPageProps> = ({ user }) => {
     setMessage(null);
 
     try {
-      // 1. Update Organization Size
-      const profileRes = await authService.updateOrgProfile({
-        organisation_id: user.organisation_id,
-        size: selectedSize
-      });
+      // 1. Update Organization Size (Removed)
+      // const profileRes = await authService.updateOrgProfile({
+      //   organisation_id: user.organisation_id,
+      //   size: selectedSize
+      // });
 
-      if (!profileRes.ok) {
-        throw new Error(profileRes.error || "Failed to update organization size.");
-      }
+      // if (!profileRes.ok) {
+      //   throw new Error(profileRes.error || "Failed to update organization size.");
+      // }
 
       // 2. Assign the Subscription Plan
       const subRes = await subscriptionService.assignSubscription({
@@ -56,7 +56,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({ user }) => {
       });
 
       if (subRes.ok) {
-        setMessage(`Successfully subscribed to ${planName} Plan (${selectedSize})!`);
+        setMessage(`Successfully subscribed to ${planName} Plan!`);
         setTimeout(() => {
           navigate('/dashboard');
         }, 1500);
@@ -76,20 +76,8 @@ export const PricingPage: React.FC<PricingPageProps> = ({ user }) => {
     <div className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <h1 className="text-4xl font-bold text-center text-gray-900 mb-8">Plans & Pricing</h1>
 
-      {/* Organization Size Selector */}
-      <div className="flex flex-col items-center mb-12">
-        <label className="text-gray-700 font-semibold mb-2">Select your Organization Size:</label>
-        <select
-          value={selectedSize}
-          onChange={(e) => setSelectedSize(e.target.value)}
-          className="border-2 border-blue-200 rounded-lg p-3 bg-white text-gray-800 font-medium focus:outline-none focus:border-blue-500 transition-colors"
-        >
-          <option value="Small">Small (1-10 Employees)</option>
-          <option value="Medium">Medium (11-50 Employees)</option>
-          <option value="Large">Large (50+ Employees)</option>
-        </select>
-        <p className="text-gray-500 text-sm mt-2">Prices are tailored to your scale.</p>
-      </div>
+      {/* Organization Size Selector Removed */}
+
 
       {message && (
         <div className={`text-center p-4 mb-8 rounded ${message.includes('Error') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
