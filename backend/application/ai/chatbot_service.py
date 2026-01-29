@@ -184,8 +184,8 @@ class ChatbotService:
                 entities=[],
             )
 
-        # Apply personality styling
-        if personality:
+        # Apply personality styling, except when admin configured a custom welcome
+        if personality and not (chatbot and chatbot.welcome_message):
             reply = self._apply_personality(reply, personality.name)
 
         # Emoji handling
@@ -324,11 +324,11 @@ class ChatbotService:
         name_normalized = (personality_name or "").strip().lower()
 
         if "friendly" in name_normalized or "casual" in name_normalized:
-            prefix = "Hey there! "
-            suffix = " Let me know if you want anything else."
+            prefix = "Hey there! 😊 "
+            suffix = " If you need a hand with anything else, just shout!"
         elif "professional" in name_normalized or "formal" in name_normalized:
             prefix = "Certainly. "
-            suffix = " Please let me know if you need further assistance."
+            suffix = " Please let me know if you require any additional assistance."
         else:
             return text
 

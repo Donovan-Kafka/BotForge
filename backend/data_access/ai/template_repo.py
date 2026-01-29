@@ -26,6 +26,7 @@ class TemplateRepository:
     DEFAULT_TEMPLATES = {
     "restaurant": {
         "greeting": "Hi! Welcome to {{company_name}} 😊 How can I help you today?",
+        "greet": "Hi! Welcome to {{company_name}} 😊 How can I help you today?",
         "business_hours": "🍽️ {{company_name}} is open from {{business_hours}} at {{location}}.",
         "pricing": "Our pricing may vary depending on your order. For details, contact us at {{contact_email}}.",
         "menu": "Here are our specialties: {{specialties}}. We serve {{cuisine_type}} cuisine in a {{restaurant_style}} style.",
@@ -33,12 +34,14 @@ class TemplateRepository:
         "reservation": "Reservations are {{supports_reservations}}. Book here: {{reservation_link}}.",
         "booking": "Sure! What date/time would you like to reserve, and how many pax?",
         "location": "{{company_name}} is located at {{location}}.",
+        "website": "You can visit {{company_name}} online at {{website_url}}.",
         "contact_support": "You can reach us at {{contact_email}} or {{contact_phone}}.",
         "fallback": "Sorry — I’m not sure about that. You can contact us at {{contact_email}}."
     },
 
     "education": {
         "greeting": "Hi! Welcome to {{company_name}} 🎓 How can I assist you today?",
+        "greet": "Hi! Welcome to {{company_name}} 🎓 How can I assist you today?",
         "business_hours": "{{company_name}} operates during {{business_hours}}. Would you like admissions help?",
         "pricing": "Fees vary by course or program. Please email {{contact_email}} for the latest details.",
         "courses": "We offer {{course_types}} for {{target_audience}}. Popular programs include {{key_programs}}.",
@@ -47,12 +50,14 @@ class TemplateRepository:
         "delivery_mode": "We offer {{delivery_mode}} learning options.",
         "booking": "Sure — are you looking to book a consultation or enroll in a course?",
         "location": "{{company_name}} is located at {{location}}.",
+        "website": "You can find more information at {{website_url}}.",
         "contact_support": "You can contact our team at {{contact_email}} or {{contact_phone}}.",
         "fallback": "Sorry — I’m not sure about that. Please reach out at {{contact_email}}."
     },
 
     "retail": {
         "greeting": "Hi! Welcome to {{company_name}} 🛍️ How can I help you today?",
+        "greet": "Hi! Welcome to {{company_name}} 🛍️ How can I help you today?",
         "business_hours": "{{company_name}} is open from {{business_hours}} at {{location}}.",
         "pricing": "Prices may vary by product. For promotions or inquiries, contact us at {{contact_email}}.",
         "products": "We carry {{product_categories}}. Let us know what you're looking for!",
@@ -62,12 +67,15 @@ class TemplateRepository:
         "payment_methods": "We accept {{payment_methods}}.",
         "booking": "Are you looking to reserve an item, check availability, or place an order?",
         "location": "{{company_name}} store is located at {{location}}.",
+        "website": "Our website is {{website_url}}.",
         "contact_support": "You can reach our support team at {{contact_email}} or {{contact_phone}}.",
         "fallback": "Sorry — I’m not sure about that. Please contact us at {{contact_email}}."
     },
 
     "default": {
         "greeting": "Hi! How can I help you today?",
+        "greet": "Hi! How can I help you today?",
+        "website": "You can visit our website at {{website_url}}.",
         "fallback": "Sorry — I’m not sure about that yet. Please contact {{contact_email}}."
     }
 }

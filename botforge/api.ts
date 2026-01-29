@@ -263,3 +263,17 @@ export const notificationService = {
         return api.request<any>(`/api/notifications/${messageId}`, 'DELETE', { user_id: userId });
     }
 };
+
+export const chatService = {
+    async welcome(companyId: number, sessionId?: string) {
+        const params = new URLSearchParams({ company_id: String(companyId) });
+        if (sessionId) {
+            params.set('session_id', sessionId);
+        }
+        return api.get<any>(`/api/chat/welcome?${params.toString()}`);
+    },
+
+    async chat(data: { company_id: number; message: string; session_id?: string; user_id?: number }) {
+        return api.post<any>('/api/chat', data);
+    },
+};

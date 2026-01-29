@@ -17,6 +17,7 @@ import { ViewChatHistory as AdminHistory } from './organisational-admin/ViewChat
 import { SubmitFeedback as AdminFeedback } from './organisational-admin/SubmitFeedback';
 import { ManageAccount as AdminAccount } from './organisational-admin/ManageAccount';
 import { Notifications } from './organisational-admin/Notifications';
+import { ChatWidget } from './ChatWidget';
 
 interface DashboardProps {
     onLogout: () => void;
@@ -425,6 +426,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
                     )}
                 </main>
             </div>
+            <ChatWidget user={user} />
         </div>
     );
 };
