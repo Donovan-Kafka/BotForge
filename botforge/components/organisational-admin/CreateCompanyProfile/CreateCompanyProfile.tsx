@@ -1,6 +1,6 @@
 import React, { useState, FormEvent, useEffect } from 'react';
 import './CreateCompanyProfile.css';
-import { authService } from '../../../api'; 
+import { authService } from '../../../api';
 import { Loader2 } from 'lucide-react';
 
 interface CreateCompanyProfileProps {
@@ -123,6 +123,10 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
 
       const res = await authService.updateOrgProfile(payload);
       if (res.ok && onSuccess) {
+        // Update local storage to reflect profile completion
+        const updatedUser = { ...user, is_profile_complete: true };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+
         onSuccess();
       } else {
         alert("Failed to update profile: " + (res.error || "Unknown error"));

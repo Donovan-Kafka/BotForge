@@ -6,9 +6,10 @@ import { useNavigate } from 'react-router-dom';
 
 interface PricingPageProps {
   user: User | null;
+  onSuccess?: () => void;
 }
 
-export const PricingPage: React.FC<PricingPageProps> = ({ user }) => {
+export const PricingPage: React.FC<PricingPageProps> = ({ user, onSuccess }) => {
   const navigate = useNavigate();
   const [selectedSize, setSelectedSize] = useState('Small');
   const [isLoading, setIsLoading] = useState(false);
@@ -57,8 +58,18 @@ export const PricingPage: React.FC<PricingPageProps> = ({ user }) => {
 
       if (subRes.ok) {
         setMessage(`Successfully subscribed to ${planName} Plan!`);
+
+        // Update local storage
+        const saved = localStorage.getItem('user');
+        if (saved) {
+          const u = JSON.parse(saved);
+          u.subscription_id = planId;
+          localStorage.setItem('user', JSON.stringify(u));
+        }
+
         setTimeout(() => {
-          navigate('/dashboard');
+          // Force reload to update App state and sidebar/header
+          window.location.href = '/dashboard';
         }, 1500);
       } else {
         setMessage(`Error: ${subRes.error}`);

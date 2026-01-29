@@ -25,6 +25,10 @@ export interface User {
   role_id: number;
   organisation_id: number;
   system_role_id?: number;
+  org_role_id?: number;
+  org_role_name?: string;
+  is_profile_complete?: boolean;
+  subscription_id?: number;
 }
 
 export interface Testimonial {

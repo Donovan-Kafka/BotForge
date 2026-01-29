@@ -163,6 +163,17 @@ def login(payload: dict) -> dict:
         print("[DEBUG] Login failed: Password hash mismatch.")
         return {"ok": False, "error": "Invalid credentials."}
 
+    org = Organisation.query.get(user.organisation_id) if user.organisation_id else None
+    
+    is_profile_complete = False
+    subscription_id = None
+    
+    if org:
+        # Check if profile is "complete" (has basic info)
+        if org.location and org.city and org.country:
+            is_profile_complete = True
+        subscription_id = org.subscription_id
+
     return {
         "ok": True,
         "message": "Logged in.",
@@ -172,7 +183,10 @@ def login(payload: dict) -> dict:
             "email": user.email,
             "system_role_id": user.system_role_id,
             "org_role_id": user.org_role_id,
+            "org_role_name": user.org_role.name if user.org_role else None,
             "organisation_id": user.organisation_id,
+            "is_profile_complete": is_profile_complete,
+            "subscription_id": subscription_id
         }
     }
 

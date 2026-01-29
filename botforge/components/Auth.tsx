@@ -22,6 +22,7 @@ export const Auth: React.FC<AuthProps> = ({ view, onLoginSuccess }) => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [verifyToken, setVerifyToken] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -75,6 +76,7 @@ export const Auth: React.FC<AuthProps> = ({ view, onLoginSuccess }) => {
 
       if (res.ok) {
         setShowSuccessMessage(true);
+        if (res.verify_token) setVerifyToken(res.verify_token);
       } else {
         setError(res.error || 'Registration failed');
       }
@@ -157,6 +159,12 @@ export const Auth: React.FC<AuthProps> = ({ view, onLoginSuccess }) => {
             <div className="bg-green-100 text-green-700 p-4 rounded-lg mb-6">
               <h3 className="text-xl font-bold mb-2">Registration Successful!</h3>
               <p>Please check your email ({formData.email}) to verify your account.</p>
+              {/* DEV ONLY: Show verification link */}
+              {verifyToken && (
+                <div className="mt-4 p-3 bg-blue-50 text-blue-800 rounded border border-blue-200 text-sm break-all">
+                  <strong>Dev Link:</strong> <a href={`/activated?token=${verifyToken}`} target="_blank" rel="noreferrer" className="underline">Verify Now</a>
+                </div>
+              )}
             </div>
             <Link
               to="/login"

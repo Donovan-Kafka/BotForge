@@ -69,15 +69,21 @@ function AppContent({ user, setUser, handleLoginSuccess }: { user: User | null, 
           <Route path="/faq" element={<FAQPage />} />
           <Route path="/login" element={<Auth view={PageView.LOGIN} onLoginSuccess={(u) => {
             handleLoginSuccess(u);
-            
+
             // REDIRECTION LOGIC START
             const admin = u.username === 'SystemAdmin' || u.role_id === 0 || u.system_role_id === 0;
-            
+
             if (admin) {
               navigate('/system-admin');
             } else if (u.organisation_id && u.organisation_id > 0) {
-              // If user already belongs to an organization, go to dashboard
-              navigate('/dashboard');
+              // If user already belongs to an organization
+              if (!u.is_profile_complete) {
+                navigate('/create-profile');
+              } else if (!u.subscription_id || u.subscription_id <= 0) {
+                navigate('/dashboard?tab=subscription');
+              } else {
+                navigate('/dashboard');
+              }
             } else {
               // NEW CHANGE: If no organisation_id (new user), force redirect to profiling
               navigate('/create-profile');
@@ -98,7 +104,7 @@ function AppContent({ user, setUser, handleLoginSuccess }: { user: User | null, 
 
         {/* Ensure the route exists for the profile page */}
         <Route path="/create-profile" element={
-          user ? <CreateCompanyProfile onSuccess={() => navigate('/pricing')} /> : <Navigate to="/login" />
+          user ? <CreateCompanyProfile onSuccess={() => navigate('/dashboard?tab=subscription')} /> : <Navigate to="/login" />
         } />
 
         <Route path="*" element={<Navigate to="/" />} />

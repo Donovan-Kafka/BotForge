@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Bot, LogOut, ShieldAlert, Users, Calendar, CreditCard } from 'lucide-react';
 import { UserRole, User } from '../types';
 import { PricingPage } from './PricingPage';
+import { useSearchParams } from 'react-router-dom';
 
 // Staff Components
 import { SubmitFeedback as StaffFeedback } from './staff/SubmitFeedback';
@@ -27,9 +28,11 @@ interface DashboardProps {
 
 export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLogin, user }) => {
     // const [currentRole, setCurrentRole] = useState<UserRole.ADMIN | UserRole.STAFF>(UserRole.ADMIN); // Removed
-    const isOrgAdmin = user?.org_role_id === 1;
-    const isStaff = user?.org_role_id === 2;
-    const [activeTab, setActiveTab] = useState<string>('analytics'); // Default to analytics/overview
+    const isOrgAdmin = user?.org_role_name === 'ORG_ADMIN';
+    const isStaff = user?.org_role_name === 'STAFF';
+
+    const [searchParams] = useSearchParams();
+    const [activeTab, setActiveTab] = useState<string>(searchParams.get('tab') || 'analytics');
 
     const [analyticsData, setAnalyticsData] = useState<any>(null);
     const [loading, setLoading] = useState(false);
