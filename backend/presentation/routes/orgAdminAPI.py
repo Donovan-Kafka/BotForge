@@ -1,11 +1,13 @@
 from flask import Blueprint, request, jsonify
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.exc import IntegrityError
 from backend import db
 from backend.application.user_service import UserService
 from backend.application.user_profile_service import UserProfileService
 from backend.data_access.Users.users import UserRepository
-from backend.models import Organisation, Chatbot, Personality, ChatMessage, AppUser
+from backend.models import Organisation, Chatbot, Personality, AppUser
+from backend.infrastructure.mongodb.mongo_client import get_mongo_db
+from backend.data_access.ChatMessages.chatMessages import ChatMessageRepository
 from backend.application.notification_service import NotificationService
 from backend.data_access.Notifications.notifications import NotificationRepository
 
@@ -233,51 +235,63 @@ def get_chat_history():
     page = request.args.get("page", type=int) or 1
     page_size = request.args.get("page_size", type=int) or 20
 
-    query = ChatMessage.query.filter(ChatMessage.organisation_id == organisation_id)
+    repo = ChatMessageRepository(get_mongo_db())
 
-    if q:
-        query = query.filter(ChatMessage.message.ilike(f"%{q}%"))
+    # Build date filters
+    from_dt = None
+    to_dt = None
 
     if date_from:
         try:
-            start = datetime.strptime(date_from, "%Y-%m-%d")
-            query = query.filter(ChatMessage.created_at >= start)
+            from_dt = datetime.strptime(date_from, "%Y-%m-%d")
         except ValueError:
             return {"error": "from must be YYYY-MM-DD"}, 400
 
     if date_to:
         try:
-            end = datetime.strptime(date_to, "%Y-%m-%d")
-            # inclusive end of day
-            end = end.replace(hour=23, minute=59, second=59)
-            query = query.filter(ChatMessage.created_at <= end)
+            to_dt = datetime.strptime(date_to, "%Y-%m-%d")
+            to_dt = to_dt.replace(hour=23, minute=59, second=59)
         except ValueError:
             return {"error": "to must be YYYY-MM-DD"}, 400
 
-    total = query.count()
-    rows = (
-        query.order_by(ChatMessage.created_at.desc())
-        .offset((page - 1) * page_size)
+    query = {
+        "organisationId": organisation_id
+    }
+
+    if q:
+        query["message"] = {"$regex": q, "$options": "i"}
+
+    if from_dt or to_dt:
+        query["timestamp"] = {}
+        if from_dt:
+            query["timestamp"]["$gte"] = from_dt
+        if to_dt:
+            query["timestamp"]["$lte"] = to_dt
+
+    collection = repo.collection
+
+    total = collection.count_documents(query)
+
+    cursor = (
+        collection.find(query)
+        .sort("timestamp", -1)
+        .skip((page - 1) * page_size)
         .limit(page_size)
-        .all()
     )
 
-    # Resolve usernames in batch
-    user_ids = {r.sender_user_id for r in rows if r.sender_user_id}
-    users = AppUser.query.filter(AppUser.user_id.in_(user_ids)).all() if user_ids else []
-    user_map = {u.user_id: u.username for u in users}
-
     results = []
-    for r in rows:
-        sender_name = r.sender_name or user_map.get(r.sender_user_id) or "Guest"
-        created_at = r.created_at
+    for r in cursor:
+        ts = r.get("timestamp")
+
+        if ts and ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+
         results.append({
-            "message_id": r.message_id,
-            "sender": r.sender,
-            "sender_name": sender_name,
-            "message": r.message,
-            "date": created_at.strftime("%d-%m-%Y") if created_at else None,
-            "time": created_at.strftime("%I:%M %p") if created_at else None,
+            "message_id": str(r["_id"]),
+            "sender": r.get("sender"),
+            "sender_name": r.get("senderName") or "Guest",
+            "message": r.get("message"),
+            "timestamp": ts.isoformat() if ts else None,
         })
 
     return jsonify({
@@ -287,6 +301,7 @@ def get_chat_history():
         "page_size": page_size,
         "messages": results,
     }), 200
+
 
 
 # =================================
@@ -318,42 +333,45 @@ def get_chatbot_analytics():
 
     # Inclusive end of day
     end = end.replace(hour=23, minute=59, second=59)
+    # mongo query
+    repo = ChatMessageRepository(get_mongo_db())
 
-    rows = (
-        ChatMessage.query
-        .filter(ChatMessage.organisation_id == organisation_id)
-        .filter(ChatMessage.sender == "user")
-        .filter(ChatMessage.created_at >= start)
-        .filter(ChatMessage.created_at <= end)
-        .order_by(ChatMessage.created_at.asc())
-        .all()
-    )
+    query = {
+        "organisationId": organisation_id,
+        "sender": "user",
+        "timestamp": {
+            "$gte": start,
+            "$lte": end,
+        },
+    }
 
-    # Daily counts (Mon-Sun)
+    rows = repo.collection.find(query)
+    # analytics calculations
     daily_counts = {}
     unique_users = set()
     unique_sessions = set()
     hourly_counts = {}
 
     for r in rows:
-        ts = r.created_at
+        ts = r.get("timestamp")
         if not ts:
             continue
+
         day_key = ts.date()
         daily_counts[day_key] = daily_counts.get(day_key, 0) + 1
 
         hour = ts.hour
         hourly_counts[hour] = hourly_counts.get(hour, 0) + 1
 
-        if r.sender_user_id:
-            unique_users.add(r.sender_user_id)
-        elif r.session_id:
-            unique_sessions.add(r.session_id)
+        if r.get("senderUserId"):
+            unique_users.add(r.get("senderUserId"))
+        elif r.get("sessionId"):
+            unique_sessions.add(r.get("sessionId"))
 
-    # Fill missing dates in range
     daily_list = []
     cursor = start.date()
     end_date = end.date()
+
     while cursor <= end_date:
         daily_list.append({
             "date": cursor.strftime("%d-%m-%Y"),
@@ -379,8 +397,14 @@ def get_chatbot_analytics():
         "unique_users": len(unique_users) if unique_users else len(unique_sessions),
         "most_active_hour": {
             "hour_24": most_active_hour,
-            "label": None if most_active_hour is None else datetime.strptime(str(most_active_hour), "%H").strftime("%I %p"),
-            "count": hourly_counts.get(most_active_hour, 0) if most_active_hour is not None else 0,
+            "label": (
+                None
+                if most_active_hour is None
+                else datetime.strptime(str(most_active_hour), "%H").strftime("%I %p")
+            ),
+            "count": hourly_counts.get(most_active_hour, 0)
+            if most_active_hour is not None
+            else 0,
         },
     }), 200
 

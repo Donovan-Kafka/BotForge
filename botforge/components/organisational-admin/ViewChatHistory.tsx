@@ -119,7 +119,11 @@ export const ViewChatHistory: React.FC<ViewChatHistoryProps> = ({ onBack, organi
                                                 {msg.sender === 'bot' ? 'Chatbot' : msg.sender_name || 'Guest'}
                                             </span>
                                         </div>
-                                        <span className="text-xs text-gray-400">{msg.date}, {msg.time}</span>
+                                        <span className="text-xs text-gray-400">
+                                        {msg.timestamp
+                                            ? new Date(msg.timestamp).toLocaleString()
+                                            : ''}
+                                        </span>
                                     </div>
                                     <p className="text-sm text-gray-600 italic">"{msg.message}"</p>
                                 </div>

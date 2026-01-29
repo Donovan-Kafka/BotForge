@@ -3,18 +3,8 @@
 from typing import Any, Dict, List, Optional
 import re
 from datetime import datetime, timezone
-from backend import db
-from backend.models import ChatMessage, AppUser
-
 
 class ChatbotService:
-    """
-    Orchestrates:
-    - intent detection (IntentService)
-    - company profiling (CompanyProfileRepository)
-    - response templates (TemplateRepository + TemplateEngine)
-    """
-
     def __init__(
         self,
         intent_service,
@@ -23,6 +13,7 @@ class ChatbotService:
         template_engine,
         chatbot_repository=None,
         personality_repository=None,
+        chat_message_repository=None,
     ):
         self.intent_service = intent_service
         self.company_repository = company_repository
@@ -30,7 +21,11 @@ class ChatbotService:
         self.template_engine = template_engine
         self.chatbot_repository = chatbot_repository
         self.personality_repository = personality_repository
+        self.chat_message_repository = chat_message_repository
 
+    # ============================================================
+    # CHAT
+    # ============================================================
     def chat(
         self,
         company_id: str | int,
@@ -38,61 +33,38 @@ class ChatbotService:
         session_id: Optional[str] = None,
         user_id: Optional[int] = None,
     ) -> Dict[str, Any]:
-        """
-        Main entrypoint called from chatRoutes.py
 
-        Returns a dict that can be JSON-ified:
-        {
-          "ok": True,
-          "intent": "...",
-          "confidence": 0.9,
-          "entities": [...],
-          "reply": "...",
-          "quick_replies": [...]
-        }
-        """
-
-        # 1) Intent detection (TF-IDF or embedding service)
         intent_result = self.intent_service.parse(message)
         intent = intent_result.get("intent", "fallback")
         confidence = float(intent_result.get("confidence", 0.0))
-        entities: List[Dict[str, Any]] = intent_result.get("entities", [])
+        entities = intent_result.get("entities", [])
 
-        # 2) Load company profile (Organisation-based)
         company = self.company_repository.get_company_profile(company_id)
 
-        # 3) Fetch chatbot settings (if available)
-        chatbot = None
-        if self.chatbot_repository:
-            chatbot = self.chatbot_repository.get_by_organisation_id(company_id)
+        chatbot = (
+            self.chatbot_repository.get_by_organisation_id(company_id)
+            if self.chatbot_repository
+            else None
+        )
 
-        # 4) Load personality (if configured)
         personality = None
         if chatbot and chatbot.personality_id and self.personality_repository:
             personality = self.personality_repository.get_by_id(chatbot.personality_id)
 
-        # 5) Determine industry (restaurant / retail / education / default)
-        industry = None
-        if company:
-            industry = company.get("industry") or "default"
-        else:
-            industry = "default"
+        industry = (company or {}).get("industry", "default")
 
-        # 6) Fetch template for (industry, intent)
         template = self.template_repository.get_template(
             company_id=company_id,
             industry=industry,
             intent=intent,
         )
 
-        # 7) Render response text
         reply = self.template_engine.render(
             template=template,
             company=company or {},
             entities=entities,
         )
 
-        # 8) Override greeting with chatbot welcome message if configured
         if chatbot and intent in ("greet", "greeting") and chatbot.welcome_message:
             reply = self.template_engine.render(
                 template=chatbot.welcome_message,
@@ -100,20 +72,16 @@ class ChatbotService:
                 entities=entities,
             )
 
-        # 9) Apply personality styling
         if personality:
             reply = self._apply_personality(reply, personality.name)
 
-        # 10) Emoji handling
         if chatbot and chatbot.allow_emojis is False:
             reply = self._strip_emojis(reply)
         elif chatbot and chatbot.allow_emojis is True:
             reply = self._ensure_emoji(reply)
 
-        # 11) Quick replies (you can customize per industry later)
         quick_replies = self._quick_replies_for(industry, intent)
 
-        # 12) Log chat history (user + bot messages)
         self._log_chat_message(
             organisation_id=company_id,
             chatbot_id=chatbot.bot_id if chatbot else None,
@@ -123,6 +91,7 @@ class ChatbotService:
             message=message,
             intent=intent,
         )
+
         self._log_chat_message(
             organisation_id=company_id,
             chatbot_id=chatbot.bot_id if chatbot else None,
@@ -140,32 +109,31 @@ class ChatbotService:
             "entities": entities,
             "reply": reply,
             "quick_replies": quick_replies,
-            "chatbot": {
-                "name": chatbot.name if chatbot else None,
-                "primary_language": chatbot.primary_language if chatbot else None,
-                "allow_emojis": chatbot.allow_emojis if chatbot else None,
-                "personality": personality.name if personality else None,
-            },
         }
 
-    def welcome(self, company_id: str | int, session_id: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Returns a welcome message payload for initial chat open.
-        """
-        # Load company and chatbot settings
+    # ============================================================
+    # WELCOME 
+    # ============================================================
+    def welcome(
+        self,
+        company_id: str | int,
+        session_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+
         company = self.company_repository.get_company_profile(company_id)
 
-        chatbot = None
-        if self.chatbot_repository:
-            chatbot = self.chatbot_repository.get_by_organisation_id(company_id)
+        chatbot = (
+            self.chatbot_repository.get_by_organisation_id(company_id)
+            if self.chatbot_repository
+            else None
+        )
 
         personality = None
         if chatbot and chatbot.personality_id and self.personality_repository:
             personality = self.personality_repository.get_by_id(chatbot.personality_id)
 
-        industry = company.get("industry") if company else "default"
+        industry = (company or {}).get("industry", "default")
 
-        # Use chatbot welcome message if configured; otherwise fall back to greeting template
         if chatbot and chatbot.welcome_message:
             reply = self.template_engine.render(
                 template=chatbot.welcome_message,
@@ -184,16 +152,24 @@ class ChatbotService:
                 entities=[],
             )
 
-        # Apply personality styling, except when admin configured a custom welcome
-        if personality and not (chatbot and chatbot.welcome_message):
+        if personality:
             reply = self._apply_personality(reply, personality.name)
 
-        # Emoji handling
         if chatbot and chatbot.allow_emojis is False:
             reply = self._strip_emojis(reply)
         elif chatbot and chatbot.allow_emojis is True:
             reply = self._ensure_emoji(reply)
 
+        if chatbot and session_id and self.chat_message_repository:
+            self._log_chat_message(
+                organisation_id=company_id,
+                chatbot_id=chatbot.bot_id,
+                session_id=session_id,
+                sender="bot",
+                sender_user_id=None,
+                message=reply,
+                intent="greet",
+            )
         return {
             "ok": True,
             "intent": "greet",
@@ -201,84 +177,11 @@ class ChatbotService:
             "entities": [],
             "reply": reply,
             "quick_replies": self._quick_replies_for(industry, "greet"),
-            "chatbot": {
-                "name": chatbot.name if chatbot else None,
-                "primary_language": chatbot.primary_language if chatbot else None,
-                "allow_emojis": chatbot.allow_emojis if chatbot else None,
-                "personality": personality.name if personality else None,
-            },
         }
 
-    # ------------------------------------------------------------------
-    # Helper: define quick replies shown to the user
-    # ------------------------------------------------------------------
-    def _quick_replies_for(self, industry: str, intent: str) -> List[str]:
-        # You can later branch by industry (restaurant/education/retail).
-        # For now a simple static set:
-        return [
-            "Business hours",
-            "Location",
-            "Pricing",
-            "Contact support",
-            "Make a booking",
-        ]
-
-    # ------------------------------------------------------------------
-    # Helper: remove emoji characters from a string
-    # ------------------------------------------------------------------
-    def _strip_emojis(self, text: str) -> str:
-        if not text:
-            return text
-
-        emoji_pattern = re.compile(
-            "["
-            "\U0001F300-\U0001F5FF"  # symbols & pictographs
-            "\U0001F600-\U0001F64F"  # emoticons
-            "\U0001F680-\U0001F6FF"  # transport & map
-            "\U0001F700-\U0001F77F"  # alchemical symbols
-            "\U0001F780-\U0001F7FF"  # geometric shapes extended
-            "\U0001F800-\U0001F8FF"  # supplemental arrows-C
-            "\U0001F900-\U0001F9FF"  # supplemental symbols & pictographs
-            "\U0001FA00-\U0001FAFF"  # symbols & pictographs extended-A
-            "\U00002700-\U000027BF"  # dingbats
-            "\U00002600-\U000026FF"  # misc symbols
-            "]+",
-            flags=re.UNICODE,
-        )
-
-        return emoji_pattern.sub("", text)
-
-    # ------------------------------------------------------------------
-    # Helper: ensure at least one emoji if enabled
-    # ------------------------------------------------------------------
-    def _ensure_emoji(self, text: str) -> str:
-        if not text:
-            return text
-
-        emoji_pattern = re.compile(
-            "["
-            "\U0001F300-\U0001F5FF"  # symbols & pictographs
-            "\U0001F600-\U0001F64F"  # emoticons
-            "\U0001F680-\U0001F6FF"  # transport & map
-            "\U0001F700-\U0001F77F"  # alchemical symbols
-            "\U0001F780-\U0001F7FF"  # geometric shapes extended
-            "\U0001F800-\U0001F8FF"  # supplemental arrows-C
-            "\U0001F900-\U0001F9FF"  # supplemental symbols & pictographs
-            "\U0001FA00-\U0001FAFF"  # symbols & pictographs extended-A
-            "\U00002700-\U000027BF"  # dingbats
-            "\U00002600-\U000026FF"  # misc symbols
-            "]+",
-            flags=re.UNICODE,
-        )
-
-        if emoji_pattern.search(text):
-            return text
-
-        return f"{text} 🙂"
-
-    # ------------------------------------------------------------------
-    # Helper: persist chat message for history
-    # ------------------------------------------------------------------
+    # ============================================================
+    # HELPERS
+    # ============================================================
     def _log_chat_message(
         self,
         organisation_id: str | int,
@@ -289,49 +192,60 @@ class ChatbotService:
         message: str,
         intent: Optional[str],
     ) -> None:
-        try:
-            org_id = int(organisation_id)
-        except (TypeError, ValueError):
+        if not self.chat_message_repository:
             return
 
-        sender_name = None
-        if sender_user_id:
-            user = AppUser.query.get(sender_user_id)
-            if user:
-                sender_name = user.username
+        if not chatbot_id or not session_id:
+            return
 
-        chat_msg = ChatMessage(
-            organisation_id=org_id,
-            chatbot_id=chatbot_id,
-            session_id=session_id,
-            sender=sender,
-            sender_user_id=sender_user_id,
-            sender_name=sender_name,
-            message=message or "",
-            intent=intent,
-            created_at=datetime.now(timezone.utc),
+        doc = {
+            "organisationId": int(organisation_id),
+            "chatbotId": chatbot_id,
+            "sessionId": session_id,
+            "sender": sender,
+            "senderUserId": sender_user_id,
+            "senderName": None,
+            "message": message or "",
+            "timestamp": datetime.now(timezone.utc),
+            "metadata": {},
+        }
+
+        if intent:
+            doc["metadata"]["intent"] = intent
+
+        self.chat_message_repository.collection.insert_one(doc)
+
+
+
+
+    def _quick_replies_for(self, industry: str, intent: str) -> List[str]:
+        return [
+            "Business hours",
+            "Location",
+            "Pricing",
+            "Contact support",
+            "Make a booking",
+        ]
+
+    def _strip_emojis(self, text: str) -> str:
+        return re.sub(
+            "[\U0001F300-\U0001FAFF\U00002600-\U000027BF]+",
+            "",
+            text or "",
+            flags=re.UNICODE,
         )
-        db.session.add(chat_msg)
-        db.session.commit()
 
-    # ------------------------------------------------------------------
-    # Helper: apply simple personality adjustments
-    # ------------------------------------------------------------------
+    def _ensure_emoji(self, text: str) -> str:
+        if not re.search("[\U0001F600-\U0001F64F]", text or ""):
+            return f"{text} 🙂"
+        return text
+
     def _apply_personality(self, text: str, personality_name: str) -> str:
-        if not text:
-            return text
+        name = (personality_name or "").lower()
 
-        name_normalized = (personality_name or "").strip().lower()
+        if "friendly" in name or "casual" in name:
+            return f"Hey there! 😊 {text} If you need a hand, just shout!"
+        if "professional" in name or "formal" in name:
+            return f"Certainly. {text} Please let me know if you need further assistance."
 
-        if "friendly" in name_normalized or "casual" in name_normalized:
-            prefix = "Hey there! 😊 "
-            suffix = " If you need a hand with anything else, just shout!"
-        elif "professional" in name_normalized or "formal" in name_normalized:
-            prefix = "Certainly. "
-            suffix = " Please let me know if you require any additional assistance."
-        else:
-            return text
-
-        return f"{prefix}{text}{suffix}"
-
-    # ------------------------------------------------------------------
+        return text

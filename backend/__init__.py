@@ -19,6 +19,14 @@ def create_app():
     if not app.config["SQLALCHEMY_DATABASE_URI"]:
         raise RuntimeError("DATABASE_URL not set in .env")
 
+    app.config["MONGO_URI"] = os.getenv("MONGO_URI")
+    app.config["MONGO_DB_NAME"] = os.getenv("MONGO_DB_NAME")
+
+    if not app.config["MONGO_URI"]:
+        raise RuntimeError("MONGO_URI not set in .env")
+    if not app.config["MONGO_DB_NAME"]:
+        raise RuntimeError("MONGO_DB_NAME not set in .env")
+    
     db.init_app(app)
     cors.init_app(app, resources={r"/*": {"origins": "*"}})
 
@@ -34,7 +42,6 @@ def create_app():
     from backend.presentation.routes.subscriptionsAPI import subscriptions_bp
     from backend.presentation.routes.orgAdminAPI import org_admin_bp
     from backend.presentation.routes.notificationsAPI import notifications_bp
-    from backend.presentation.routes.chatMessagesAPI import chat_messages_bp
     
     app.register_blueprint(unregistered_bp, url_prefix="/api/public")
     app.register_blueprint(faq_bp, url_prefix="/api/public")
@@ -48,8 +55,7 @@ def create_app():
     app.register_blueprint(subscriptions_bp, url_prefix="/api")
     app.register_blueprint(org_admin_bp, url_prefix="/api/org-admin")
     app.register_blueprint(notifications_bp, url_prefix="/api/notifications")
-    app.register_blueprint(chat_messages_bp, url_prefix="/api/chat-messages")
-    
+
     @app.get("/health")
     def health():
         return {"ok": True}
