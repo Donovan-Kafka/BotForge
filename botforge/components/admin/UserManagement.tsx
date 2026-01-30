@@ -1,8 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Bot, Plus, Search, ShieldAlert, Loader2 } from 'lucide-react';
-import { sysAdminService } from '../../api'; //
+import { Bot, Search, ShieldAlert, Loader2, X, Check, UserCog } from 'lucide-react';
+import { sysAdminService } from '../../api';
 
 type UserTab = 'roles' | 'list' | 'access';
+
+// Interface for the editing state
+interface EditingUser {
+  user_id: number;
+  username: string;
+  organisation_id: number | null;
+  organisation_name: string | null;
+  current_role_id: number | null; // This could be org_role_id or system_role_id
+  is_system_user: boolean;
+}
 
 export const UserManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState<UserTab>('roles');
@@ -10,7 +20,13 @@ export const UserManagement: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Fetch users when the component mounts or tabs change
+  // --- NEW STATE FOR EDITING ---
+  const [editingUser, setEditingUser] = useState<EditingUser | null>(null);
+  const [availableRoles, setAvailableRoles] = useState<any[]>([]);
+  const [roleLoading, setRoleLoading] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<string>('');
+  const [targetType, setTargetType] = useState<'system' | 'org'>('org');
+
   useEffect(() => {
     if (activeTab === 'list' || activeTab === 'access') {
       loadUsers();
@@ -20,12 +36,8 @@ export const UserManagement: React.FC = () => {
   const loadUsers = async () => {
     setLoading(true);
     try {
-      const res = await sysAdminService.listUsers(); //
-      if (res.ok) {
-        setUsers(res.users); //
-      } else {
-        console.error("Failed to load users:", res.error);
-      }
+      const res = await sysAdminService.listUsers();
+      if (res.ok) setUsers(res.users);
     } catch (err) {
       console.error("API Error:", err);
     } finally {
@@ -33,12 +45,70 @@ export const UserManagement: React.FC = () => {
     }
   };
 
-  const handleToggleStatus = async (userId: number, currentStatus: boolean) => {
-    // Backend expects 'status' boolean in payload
-    const res = await sysAdminService.updateUserStatus(userId, !currentStatus);
-    if (res.ok) {
-      loadUsers(); // Refresh the list after update
+  // --- NEW HANDLER: OPEN MODAL ---
+  const handleEditClick = async (user: any) => {
+    const isSystem = user.system_role_id !== null;
+    setEditingUser({
+      user_id: user.user_id,
+      username: user.username,
+      organisation_id: user.organisation_id,
+      organisation_name: user.organisation_name,
+      current_role_id: isSystem ? user.system_role_id : user.org_role_id,
+      is_system_user: isSystem
+    });
+
+    // Set defaults based on current user state
+    setTargetType(isSystem ? 'system' : 'org');
+    setSelectedRole(isSystem ? String(user.system_role_id) : String(user.org_role_id));
+
+    // If they belong to an org, fetch that org's roles for the dropdown
+    if (user.organisation_id) {
+      setRoleLoading(true);
+      try {
+        const res = await sysAdminService.listOrgRoles(user.organisation_id);
+        if (res.ok) {
+          setAvailableRoles(res.roles);
+        }
+      } catch (e) {
+        console.error("Failed to load roles", e);
+      } finally {
+        setRoleLoading(false);
+      }
+    } else {
+      setAvailableRoles([]);
     }
+  };
+
+  // --- NEW HANDLER: SAVE CHANGES ---
+  const handleSaveRole = async () => {
+    if (!editingUser) return;
+    
+    const payload: any = { type: targetType };
+    
+    if (targetType === 'system') {
+        // Assign Super Admin ID (assuming 0 is super admin)
+        payload.system_role_id = 0; 
+    } else {
+        payload.org_role_id = parseInt(selectedRole);
+    }
+
+    try {
+        const res = await sysAdminService.updateUserRole(editingUser.user_id, payload);
+        if (res.ok) {
+            alert(`Role updated for ${editingUser.username}. Notification sent.`);
+            setEditingUser(null);
+            loadUsers(); // Refresh the list
+        } else {
+            alert(`Error: ${res.error}`);
+        }
+    } catch (e) {
+        alert("Failed to update role.");
+    }
+  };
+
+  const handleToggleStatus = async (userId: number, currentStatus: boolean) => {
+    const res = await sysAdminService.updateUserStatus(userId, !currentStatus);
+    if (res.ok) loadUsers();
   };
 
   const filteredUsers = users.filter(u => 
@@ -47,8 +117,104 @@ export const UserManagement: React.FC = () => {
   );
 
   return (
-    <div className="bg-white border border-gray-300 rounded-xl shadow-sm overflow-hidden animate-in fade-in duration-500">
-      {/* Tab Navigation */}
+    <div className="bg-white border border-gray-300 rounded-xl shadow-sm overflow-hidden animate-in fade-in duration-500 relative">
+      
+      {/* --- EDIT ROLE MODAL --- */}
+      {editingUser && (
+        <div className="absolute inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-blue-600 p-4 flex justify-between items-center text-white">
+              <h3 className="font-bold flex items-center gap-2">
+                <UserCog className="w-5 h-5" /> Edit Role: {editingUser.username}
+              </h3>
+              <button onClick={() => setEditingUser(null)} className="hover:bg-blue-700 p-1 rounded">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-600">
+                User belongs to: <strong>{editingUser.organisation_name || "System Level"}</strong>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Role Type</label>
+                <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input 
+                            type="radio" 
+                            name="roleType" 
+                            checked={targetType === 'org'} 
+                            onChange={() => setTargetType('org')}
+                            disabled={!editingUser.organisation_id} 
+                        />
+                        <span>Organisation Role</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input 
+                            type="radio" 
+                            name="roleType" 
+                            checked={targetType === 'system'} 
+                            onChange={() => setTargetType('system')}
+                        />
+                        <span>System Admin</span>
+                    </label>
+                </div>
+                {!editingUser.organisation_id && (
+                    <p className="text-xs text-red-500 mt-1">
+                        * This user is not linked to any organisation, so they can only be System Admin.
+                    </p>
+                )}
+              </div>
+
+              {targetType === 'org' && (
+                  <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Select Organisation Role</label>
+                      {roleLoading ? (
+                          <div className="text-gray-400 text-sm flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin"/> Loading roles...</div>
+                      ) : (
+                          <select 
+                            className="w-full border border-gray-300 rounded p-2"
+                            value={selectedRole}
+                            onChange={(e) => setSelectedRole(e.target.value)}
+                          >
+                              {availableRoles.map(r => (
+                                  <option key={r.org_role_id} value={r.org_role_id}>
+                                      {r.name}
+                                  </option>
+                              ))}
+                          </select>
+                      )}
+                  </div>
+              )}
+
+              {targetType === 'system' && (
+                  <div className="bg-yellow-50 border border-yellow-200 p-3 rounded text-sm text-yellow-800">
+                      <ShieldAlert className="w-4 h-4 inline mr-1" />
+                      <strong>Warning:</strong> Promoting to System Admin grants full platform control.
+                  </div>
+              )}
+
+              <div className="flex justify-end gap-3 pt-2">
+                  <button 
+                    onClick={() => setEditingUser(null)}
+                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
+                  >
+                      Cancel
+                  </button>
+                  <button 
+                    onClick={handleSaveRole}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
+                  >
+                      <Check className="w-4 h-4" /> Save & Notify
+                  </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- TAB NAVIGATION --- */}
       <div className="flex border-b border-gray-200">
         {(['roles', 'list', 'access'] as UserTab[]).map((tab) => (
           <button 
@@ -65,7 +231,6 @@ export const UserManagement: React.FC = () => {
         ))}
       </div>
 
-      {/* Role Configuration - Placeholder for Role-Permission Matrix */}
       {activeTab === 'roles' && (
         <div>
           <div className="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50">
@@ -85,7 +250,6 @@ export const UserManagement: React.FC = () => {
         </div>
       )}
 
-      {/* User List */}
       {activeTab === 'list' && (
         <div>
           <div className="p-6 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
@@ -132,7 +296,12 @@ export const UserManagement: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button className="text-blue-600 hover:text-blue-900">Edit Role</button>
+                      <button 
+                        onClick={() => handleEditClick(user)}
+                        className="text-blue-600 hover:text-blue-900 font-bold hover:underline"
+                      >
+                        Edit Role
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -142,7 +311,6 @@ export const UserManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Access Control Zone */}
       {activeTab === 'access' && (
         <div>
           <div className="bg-red-50 border-l-4 border-red-500 p-4 m-6 rounded-r-lg flex items-start gap-3">
