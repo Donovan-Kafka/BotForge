@@ -257,6 +257,15 @@ export const orgAdminService = {
 };
 
 export const operatorService = {
+    // Invitation & Registration
+    async validateInvitation(token: string) {
+        return api.get<any>(`/api/operator/invitations/validate?token=${token}`);
+    },
+
+    async register(data: any) {
+        return api.post<any>('/api/operator/register', data);
+    },
+
     async updateProfile(data: { user_id: number; username?: string; email?: string }) {
         return api.put<any>('/api/operator/profile', data);
     },

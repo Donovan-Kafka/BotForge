@@ -66,7 +66,12 @@ export const ManageStaff: React.FC<ManageStaffProps> = ({ onBack, onCreateRole }
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [inviteEmail, setInviteEmail] = useState('');
     const [inviteLoading, setInviteLoading] = useState(false);
-    const [inviteResult, setInviteResult] = useState<{ token: string; link: string } | null>(null);
+    const [inviteResult, setInviteResult] = useState<{
+        token: string;
+        link: string;
+        emailSent?: boolean;
+        emailError?: string;
+    } | null>(null);
 
     const handleInvite = async () => {
         if (!inviteEmail || !inviteEmail.includes('@')) {
@@ -83,7 +88,12 @@ export const ManageStaff: React.FC<ManageStaffProps> = ({ onBack, onCreateRole }
                 invited_by_user_id: currentUser.user_id
             });
             if (res.ok) {
-                setInviteResult({ token: res.token, link: res.signup_link });
+                setInviteResult({
+                    token: res.token,
+                    link: res.signup_link,
+                    emailSent: res.email_sent,
+                    emailError: res.email_error
+                });
                 setInviteEmail('');
             } else {
                 alert("Error: " + res.error);
@@ -149,13 +159,22 @@ export const ManageStaff: React.FC<ManageStaffProps> = ({ onBack, onCreateRole }
                                 </div>
                             ) : (
                                 <div className="text-center py-4">
-                                    <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${inviteResult.emailSent === false ? 'bg-yellow-100 text-yellow-600' : 'bg-green-100 text-green-600'}`}>
                                         <Save className="w-8 h-8" />
                                     </div>
                                     <h4 className="text-lg font-bold text-gray-900 mb-2">Invitation Created!</h4>
-                                    <p className="text-sm text-gray-600 mb-6">
-                                        Share this link with your colleague to let them sign up.
-                                    </p>
+
+                                    {inviteResult.emailSent === false ? (
+                                        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm p-3 rounded mb-4 text-left">
+                                            <b>Warning: Email not sent.</b>
+                                            <p className="mt-1">{inviteResult.emailError || "SMTP usage failed."}</p>
+                                            <p className="mt-1">You must manually provide the link below to the user.</p>
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-gray-600 mb-6">
+                                            An email has been sent to the user. You can also share this link manually.
+                                        </p>
+                                    )}
 
                                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-6 break-all font-mono text-sm text-gray-600">
                                         {inviteResult.link}
