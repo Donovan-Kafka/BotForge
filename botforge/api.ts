@@ -73,6 +73,10 @@ export const authService = {
     async updateOrgProfile(data: any) {
         return api.post('/api/public/organisation/profile', data);
     },
+
+    async getOrgProfile(organisationId: number) {
+        return api.get<any>(`/api/public/organisation/profile/${organisationId}`);
+    },
 };
 
 export const publicService = {
@@ -118,12 +122,11 @@ export const sysAdminService = {
         return api.get<any>('/api/sysadmin/users');
     },
 
-    async updateUserStatus(userId: number, status: boolean) {
-        return api.put<any>(`/api/sysadmin/users/${userId}/status`, { status });
-    },
-    
     async listOrgRoles(organisationId: number) {
         return api.get<any>(`/api/sysadmin/org-roles?organisation_id=${organisationId}`);
+    },
+    async updateUserStatus(userId: number, status: boolean) {
+        return api.put<any>(`/api/sysadmin/users/${userId}/status`, { status });
     },
 
     async updateUserRole(userId: number, data: { type: 'system' | 'org'; system_role_id?: number; org_role_id?: number }) {
@@ -187,7 +190,7 @@ export const sysAdminService = {
     async featureFeedback(feedbackId: number, isTestimonial: boolean) {
         return api.post<any>('/api/sysadmin/testimonials/feature', { feedback_id: feedbackId, is_testimonial: isTestimonial });
     }
-   
+
 
 };
 
@@ -200,6 +203,10 @@ export const feedbackService = {
 export const orgAdminService = {
     async listOrgUsers(organisationId: number) {
         return api.get<any>(`/api/org-admin/users?organisation_id=${organisationId}`);
+    },
+
+    async updateAdminProfile(data: { user_id: number; username?: string; email?: string }) {
+        return api.put<any>('/api/org-admin/profile', data);
     },
 
     async updateUserRole(userId: number, newRoleId: number) {

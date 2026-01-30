@@ -46,7 +46,7 @@ def create_app():
     app.register_blueprint(unregistered_bp, url_prefix="/api/public")
     app.register_blueprint(faq_bp, url_prefix="/api/public")
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
-    app.register_blueprint(operator_bp, url_prefix="/api/public")
+    app.register_blueprint(operator_bp, url_prefix="/api/operator")
     app.register_blueprint(sysadmin_bp, url_prefix="/api/sysadmin")
     app.register_blueprint(features_bp, url_prefix="/api")
     app.register_blueprint(feedback_bp, url_prefix="/api")

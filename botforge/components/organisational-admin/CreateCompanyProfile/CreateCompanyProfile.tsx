@@ -159,6 +159,11 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
             </select>
           </div>
 
+          <div className="form-group">
+            <label>Address:</label>
+            <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} required />
+          </div>
+
           <div className="form-row">
             <div className="form-group">
               <label>City:</label>
