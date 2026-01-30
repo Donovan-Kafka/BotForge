@@ -27,6 +27,9 @@ def create_app():
     if not app.config["MONGO_DB_NAME"]:
         raise RuntimeError("MONGO_DB_NAME not set in .env")
     
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_pre_ping": True
+    }
     db.init_app(app)
     cors.init_app(app, resources={r"/*": {"origins": "*"}})
 
