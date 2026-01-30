@@ -8,7 +8,7 @@ from backend.application.notification_service import NotificationService
 from backend.data_access.Notifications.notifications import NotificationRepository
 from backend.data_access.Users.users import UserRepository
 from backend.application.user_profile_service import UserProfileService
-
+from backend.infrastructure.mongodb.mongo_client import get_mongo_db
 
 
 sysadmin_bp = Blueprint("sysadmin", __name__)
@@ -1134,11 +1134,6 @@ def dashboard_user_status():
     }), 200
 
 
-from datetime import datetime, timedelta, timezone
-from sqlalchemy import func
-
-from datetime import datetime, timedelta, timezone
-from sqlalchemy import func
 
 @sysadmin_bp.get("/dashboard/daily-usage")
 def dashboard_daily_usage():
@@ -1157,37 +1152,65 @@ def dashboard_daily_usage():
     end_dt = datetime.now(timezone.utc)
     start_dt = end_dt - timedelta(days=days - 1)
 
-    if metric == "messages":
-        rows = (
-            db.session.query(
-                func.date(ChatMessage.created_at).label("d"),
-                func.count(ChatMessage.message_id).label("c"),
-            )
-            .filter(ChatMessage.created_at >= start_dt)
-            .group_by(func.date(ChatMessage.created_at))
-            .order_by(func.date(ChatMessage.created_at).asc())
-            .all()
-        )
-    else:  # sessions
-        rows = (
-            db.session.query(
-                func.date(ChatMessage.created_at).label("d"),
-                func.count(func.distinct(ChatMessage.session_id)).label("c"),
-            )
-            .filter(ChatMessage.created_at >= start_dt)
-            .filter(ChatMessage.session_id.isnot(None))
-            .group_by(func.date(ChatMessage.created_at))
-            .order_by(func.date(ChatMessage.created_at).asc())
-            .all()
-        )
+    dbm = get_mongo_db()
+    collection = dbm.chatMessages  
 
-    counts_by_date = {str(r.d): int(r.c) for r in rows}
+    match_stage = {
+        "$match": {
+            "timestamp": {"$gte": start_dt}
+        }
+    }
+
+    if metric == "messages":
+        pipeline = [
+            match_stage,
+            {
+                "$group": {
+                    "_id": {
+                        "$dateToString": {
+                            "format": "%Y-%m-%d",
+                            "date": "$timestamp"
+                        }
+                    },
+                    "count": {"$sum": 1}
+                }
+            },
+            {"$sort": {"_id": 1}}
+        ]
+    else:  # sessions
+        pipeline = [
+            match_stage,
+            {"$match": {"sessionId": {"$ne": None}}},
+            {
+                "$group": {
+                    "_id": {
+                        "$dateToString": {
+                            "format": "%Y-%m-%d",
+                            "date": "$timestamp"
+                        }
+                    },
+                    "sessions": {"$addToSet": "$sessionId"}
+                }
+            },
+            {
+                "$project": {
+                    "count": {"$size": "$sessions"}
+                }
+            },
+            {"$sort": {"_id": 1}}
+        ]
+
+    rows = list(collection.aggregate(pipeline))
+    counts_by_date = {r["_id"]: r["count"] for r in rows}
 
     series = []
     for i in range(days):
         day = (start_dt + timedelta(days=i)).date()
         day_str = str(day)
-        series.append({"date": day_str, "count": counts_by_date.get(day_str, 0)})
+        series.append({
+            "date": day_str,
+            "count": counts_by_date.get(day_str, 0)
+        })
 
     return jsonify({
         "ok": True,
