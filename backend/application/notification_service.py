@@ -1,3 +1,7 @@
+import os
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from backend.data_access.Notifications.notifications import NotificationRepository
 from backend.data_access.Users.users import UserRepository
 
@@ -11,6 +15,39 @@ class NotificationService:
     ):
         self.notification_repo = notification_repo
         self.user_repo = user_repo
+
+        #smtp config from environmental variable
+        self.smtp_host = os.getenv("SMTP_HOST", "")
+        self.smtp_port = int(os.getenv("SMTP_PORT", "587"))
+        self.smtp_user = os.getenv("SMTP_USER", "")
+        self.smtp_pass = os.getenv("SMTP_PASS", "")
+        self.smtp_from = os.getenv("SMTP_FROM", self.smtp_user)
+
+    def send_email(self, to: str, subject: str, html_content: str, text_content: str | None = None) -> None:
+        if not to:
+            raise ValueError("Missing recipient email")
+        if not self.smtp_host or not self.smtp_port or not self.smtp_from:
+            raise RuntimeError("SMTP config missing (SMTP_HOST/SMTP_PORT/SMTP_FROM)")
+
+        msg = MIMEMultipart("alternative")
+        msg["From"] = self.smtp_from
+        msg["To"] = to
+        msg["Subject"] = subject
+
+        if text_content:
+            msg.attach(MIMEText(text_content, "plain", "utf-8"))
+        msg.attach(MIMEText(html_content, "html", "utf-8"))
+
+        with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
+
+            if self.smtp_user and self.smtp_pass:
+                server.login(self.smtp_user, self.smtp_pass)
+
+            server.sendmail(self.smtp_from, [to], msg.as_string())
+
 
     # System / application use
     # single specific user only

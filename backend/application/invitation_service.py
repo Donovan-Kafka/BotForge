@@ -1,4 +1,5 @@
 import secrets
+import os
 from sqlalchemy.exc import IntegrityError
 from backend import db
 from backend.models import Invitation, AppUser, OrgRole
@@ -13,8 +14,7 @@ def _new_token() -> str:
     
     return secrets.token_urlsafe(32)
 
-def create_invitation(payload: dict) -> dict:
-    
+def create_invitation(payload: dict, notification_service) -> dict:
     email = (payload.get("email") or "").strip().lower()
     organisation_id = payload.get("organisation_id")
     invited_by_user_id = payload.get("invited_by_user_id")
@@ -22,16 +22,15 @@ def create_invitation(payload: dict) -> dict:
     if not email or not organisation_id or not invited_by_user_id:
         return {"ok": False, "error": "email, organisation_id, invited_by_user_id are required."}
 
-    # ensure inviter exists
     inviter = AppUser.query.get(invited_by_user_id)
     if not inviter:
         return {"ok": False, "error": "Invited_by_user_id not found."}
 
-    # prevent inviting someone who already has an account
     if AppUser.query.filter_by(email=email).first():
         return {"ok": False, "error": "This email already has an account."}
 
-    # Create token, handle rare collision with retry
+    base_url = os.getenv("APP_BASE_URL", "http://localhost:5000")
+
     for _ in range(5):
         token = _new_token()
         inv = Invitation(
@@ -42,20 +41,51 @@ def create_invitation(payload: dict) -> dict:
             status=STATUS_PENDING
         )
         db.session.add(inv)
+
         try:
             db.session.commit()
-            signup_link = f"http://localhost:5000/operator-signup?token={token}"
-            return {
-                "ok": True,
-                "message": "Invitation created.",
-                "invitation_id": inv.invitation_id,
-                "token": token,
-                "signup_link": signup_link
-            }
         except IntegrityError:
             db.session.rollback()
-            # token unique collision or FK issue; retry token collisions
             continue
+
+        base_url = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173")
+        signup_link = f"{base_url}/operator-signup?token={token}"
+
+        subject = "You're invited to join the organisation"
+        html = f"""
+        <div style="font-family: Arial, sans-serif; line-height: 1.5;">
+            <h2>Invitation to join</h2>
+            <p>You’ve been invited to join an organisation on BotForge.</p>
+            <p><a href="{signup_link}">Click here to accept the invitation</a></p>
+            <p>If the link doesn’t work, copy this:</p>
+            <p>{signup_link}</p>
+        </div>
+        """
+        text = f"You've been invited to join an organisation. Accept here: {signup_link}"
+
+        try:
+            notification_service.send_email(
+                to=email,
+                subject=subject,
+                html_content=html,
+                text_content=text
+            )
+            email_sent = True
+            email_error = None
+        except Exception as e:
+            # invitation is still created successfully, only email failed
+            email_sent = False
+            email_error = str(e)
+
+        return {
+            "ok": True,
+            "message": "Invitation created.",
+            "email_sent": email_sent,
+            "email_error": email_error,
+            "invitation_id": inv.invitation_id,
+            "token": token,
+            "signup_link": signup_link
+        }
 
     return {"ok": False, "error": "Failed to generate a unique invitation token. Try again."}
 
@@ -118,7 +148,7 @@ def accept_invitation_and_create_operator(payload: dict, notification_service) -
         username=username,
         email=inv.email,
         password=password_hash,
-        system_role_id=None,
+        system_role_id=1,
         org_role_id=staff_role.org_role_id,
         organisation_id=inv.organisation_id,
         status=True
