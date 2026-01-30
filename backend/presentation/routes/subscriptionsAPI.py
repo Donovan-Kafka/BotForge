@@ -1,5 +1,7 @@
 from flask import Blueprint, jsonify, request
 from backend.data_access.Subscriptions.subscriptions import SubscriptionRepository
+from backend.data_access.Users.users import UserRepository
+from backend.data_access.Organisation.organisation import OrganisationRepository
 from backend.application.UnregisteredUsers.getActiveSubscriptions import GetActiveSubscriptions
 from backend.application.UnregisteredUsers.choosePlan import AssignSubscriptionUseCase
 
@@ -39,8 +41,15 @@ def assign_subscription():
             "error": "user_id and subscription_id are required."
         }), 400
 
+    user_repo = UserRepository()
+    organisation_repo = OrganisationRepository()
     subscription_repo = SubscriptionRepository()
-    use_case = AssignSubscriptionUseCase(subscription_repo)
+    
+    use_case = AssignSubscriptionUseCase(
+        user_repo=user_repo,
+        organisation_repo=organisation_repo,
+        subscription_repo=subscription_repo
+    )
 
     result = use_case.execute(
         user_id=user_id,
