@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Bot, LogOut } from 'lucide-react';
-import { AdminLogin } from './admin/AdminLogin';
+// import { AdminLogin } from './admin/AdminLogin';
 import { AdminAnalytics } from './admin/AdminAnalytics';
 import { UserManagement } from './admin/UserManagement';
 // import { AIModelManagement } from './admin/AIModelManagement'; // Removed
@@ -32,16 +32,16 @@ export type AdminView =
   | 'profile';
 
 export const SystemAdminDashboard: React.FC<SystemAdminDashboardProps> = ({ onLogout, onBackToDashboard, user }) => {
-  const [currentView, setCurrentView] = useState<AdminView>('login');
+  const [currentView, setCurrentView] = useState<AdminView>('stats');
 
   const handleAdminLogin = () => {
     setCurrentView('stats');
   };
 
   // If viewing login, render full screen login
-  if (currentView === 'login') {
-    return <AdminLogin onLogin={handleAdminLogin} />;
-  }
+  // if (currentView === 'login') {
+  //   return <AdminLogin onLogin={handleAdminLogin} />;
+  // }
 
   // Navigation Button Helper
   const NavButton = ({ view, label }: { view: AdminView, label: string }) => (
