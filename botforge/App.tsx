@@ -17,26 +17,28 @@ const TokenHandler = () => {
   const location = useLocation();
 
   React.useEffect(() => {
+    if (location.pathname !== "/activated") return;   //prevents breaking of operator invites
+
     const params = new URLSearchParams(location.search);
-    const token = params.get('token');
+    const token = params.get("token");
+    if (!token) return;
 
-    if (token) {
-      // Remove token from URL
-      navigate(location.pathname, { replace: true });
+    // Remove token from URL
+    navigate(location.pathname, { replace: true });
 
-      authService.verifyEmail(token).then((res) => {
-        if (res.ok) {
-          navigate('/activated');
-        } else {
-          console.error("Verification failed:", res.error);
-          navigate('/login');
-        }
-      });
-    }
-  }, [location, navigate]);
+    authService.verifyEmail(token).then((res) => {
+      if (res.ok) {
+        navigate("/activated");
+      } else {
+        console.error("Verification failed:", res.error);
+        navigate("/login");
+      }
+    });
+  }, [location.pathname, location.search, navigate]);
 
   return null;
 };
+
 
 // Layout Wrapper to pass props to Layout and render Outlet
 const LayoutWrapper = ({ isLoggedIn, onLogout }: { isLoggedIn: boolean, onLogout: () => void }) => {

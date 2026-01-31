@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { PageView, User } from '../types';
 import { Bot, AlertCircle, Loader2 } from 'lucide-react';
 import { authService } from '../api';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 
 interface AuthProps {
@@ -11,7 +11,6 @@ interface AuthProps {
 }
 
 export const Auth: React.FC<AuthProps> = ({ view, onLoginSuccess }) => {
-  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -24,25 +23,6 @@ export const Auth: React.FC<AuthProps> = ({ view, onLoginSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [verifyToken, setVerifyToken] = useState<string | null>(null);
-  const [searchParams] = useSearchParams();
-  const [verifyOk, setVerifyOk] = useState<boolean | null>(null);
-
-  useEffect(() => {
-  if (view !== PageView.ACTIVATED) return;
-
-    setVerifyOk(null);
-    
-    const token = searchParams.get('token');
-    if (!token) {
-      setVerifyOk(false);
-      return;
-    }
-
-    (async () => {
-      const res = await authService.verifyEmail(token);
-      setVerifyOk(res.ok === true);
-    })();
-  }, [view, searchParams]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -307,48 +287,20 @@ export const Auth: React.FC<AuthProps> = ({ view, onLoginSuccess }) => {
   }
   // Account Activated View (Redirected after email verification)
   if (view === PageView.ACTIVATED) {
-    if (verifyOk === null) {
-      return (
-        <div className="flex justify-center items-center py-20">
-          <Loader2 className="animate-spin h-6 w-6 text-gray-700" />
-        </div>
-      );
-    }
-
     return (
       <div className="flex flex-col items-center justify-center py-20 px-4">
-        <div className="flex items-center gap-2 mb-8">
-          <div className="bg-blue-600 p-2 rounded-lg">
-            <Bot className="h-8 w-8 text-white" />
-          </div>
-          <span className="text-3xl font-bold text-gray-900">BotForge</span>
-        </div>
+        <h3 className="text-xl font-bold text-gray-900 mb-4">Hello!</h3>
+        <p className="text-gray-800 text-lg mb-2">Thank you, your email has been verified.</p>
+        <p className="text-gray-800 text-lg mb-2">Your account has been activated.</p>
+        <p className="text-gray-800 text-lg">Login to get started.</p>
 
-        {verifyOk ? (
-          <>
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Hello!</h3>
-            <p className="text-gray-800 text-lg mb-2">Thank you, your email has been verified.</p>
-            <p className="text-gray-800 text-lg mb-2">Your account has been activated.</p>
-            <p className="text-gray-800 text-lg">Login to get started.</p>
-          </>
-        ) : (
-          <>
-            <h3 className="text-xl font-bold text-red-600 mb-4">Verification failed</h3>
-            <p className="text-gray-800 text-lg mb-2">
-              This verification link is invalid or expired.
-            </p>
-          </>
-        )}
-
-        <Link
-          to="/login"
-          className="mt-10 bg-white border-2 border-gray-600 text-gray-800 font-bold py-2 px-8 rounded hover:bg-gray-50 transition-colors"
-        >
+        <Link to="/login" className="mt-10 underline text-blue-600">
           Login
         </Link>
       </div>
     );
   }
+
 
   return null;
 };
