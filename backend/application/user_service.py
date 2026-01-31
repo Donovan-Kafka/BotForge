@@ -1,5 +1,5 @@
-from backend.models import AppUser, OrgRole
-from backend.data_access.Users.users import UserRepository
+from models import AppUser, OrgRole
+from data_access.Users.users import UserRepository
 
 
 class UserService:
