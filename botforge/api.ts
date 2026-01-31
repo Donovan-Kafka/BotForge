@@ -19,7 +19,6 @@ export const api = {
         };
 
         // DEV ONLY: Inject X-USER-ID for testing sysadmin features if not present
-        // In a real app, you'd get this from a valid auth token or user state
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
             try {
@@ -71,7 +70,7 @@ export const authService = {
     },
 
     async verifyEmail(token: string) {
-        return api.get(`/api/public/verify-email?token=${token}`);
+        return api.get(`/api/public/verify-email?token=${encodeURIComponent(token)}`);
     },
 
     async updateOrgProfile(data: any) {

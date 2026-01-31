@@ -2,6 +2,8 @@ from sqlalchemy.exc import IntegrityError
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import current_app
+from urllib.parse import quote
+import os
 
 from backend import db
 from backend.models import (
@@ -108,16 +110,48 @@ def register_org_admin(payload: dict) -> dict:
         return {"ok": False, "error": "Registration failed (duplicate or invalid data)."}
 
     token = generate_verify_token(user.user_id, user.email)
-    
-    # Print token to console 
-    print(f"\n[DEBUG] Verification Link: http://localhost:3000?token={token}\n")
+
+    frontend_base = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173")
+    verify_link = f"{frontend_base}/activated?token={quote(token)}"
+
+    subject = "Verify your email for BotForge"
+    html = f"""
+    <div style="font-family: Arial, sans-serif; line-height: 1.5;">
+    <h2>Verify your email</h2>
+    <p>Thanks for signing up. Please verify your email to activate your account.</p>
+    <p><a href="{verify_link}">Verify email</a></p>
+    <p>If the link doesn't work, copy this:</p>
+    <p>{verify_link}</p>
+    <p style="color:#666;font-size:12px;">This link expires in 24 hours.</p>
+    </div>
+    """
+    text = f"Verify your email: {verify_link} (expires in 24 hours)"
+
+    notification_service = NotificationService(
+        NotificationRepository(),
+        UserRepository()
+    )
+
+    try:
+        notification_service.send_email(
+            to=email,
+            subject=subject,
+            html_content=html,
+            text_content=text
+        )
+        email_sent = True
+        email_error = None
+    except Exception as e:
+        email_sent = False
+        email_error = str(e)
 
     return {
         "ok": True,
         "message": "Registered. Please verify your email.",
         "organisation_id": org.organisation_id,
         "user_id": user.user_id,
-        "verify_token": token  # Week 1: return token (later email it)
+        "email_sent": email_sent,
+        "email_error": email_error
     }
 
 def confirm_email(token: str) -> dict:
