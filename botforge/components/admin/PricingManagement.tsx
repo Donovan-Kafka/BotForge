@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Bot, Trash2, Edit2, Plus, X, List } from 'lucide-react';
+import { Bot, Edit2, X } from 'lucide-react';
 import { sysAdminService } from '../../api';
 
 interface SubscriptionFeature {
@@ -112,7 +112,7 @@ export const PricingManagement: React.FC = () => {
       console.error("Failed to save subscription", e);
     }
   };
-
+  /*
   const handleDelete = async (id: number) => {
     if (window.confirm("Are you sure? If this plan is in use, it will be deactivated instead of deleted.")) {
       try {
@@ -123,7 +123,7 @@ export const PricingManagement: React.FC = () => {
       }
     }
   };
-
+ */
   const handleOpenFeatureModal = (sub: Subscription) => {
     setCurrentSubId(sub.subscription_id);
     setSelectedFeatureIds(sub.features.map(f => f.feature_id));
@@ -156,6 +156,7 @@ export const PricingManagement: React.FC = () => {
             <Bot className="h-5 w-5 text-white" />
           </div>
           <h2 className="text-xl font-bold text-gray-900">Subscription Plans</h2>
+          {/*
           <div className="ml-auto">
             <button
               onClick={() => handleOpenModal()}
@@ -164,6 +165,7 @@ export const PricingManagement: React.FC = () => {
               <Plus className="w-4 h-4" /> Add Plan
             </button>
           </div>
+          */}
         </div>
 
         <div className="border border-gray-200 rounded-lg overflow-hidden">
@@ -200,7 +202,9 @@ export const PricingManagement: React.FC = () => {
                     </td>
                     <td className="p-4 flex gap-3">
                       <Edit2 onClick={() => handleOpenModal(s)} className="h-5 w-5 text-blue-400 cursor-pointer hover:text-blue-600" />
+                      {/*
                       <Trash2 onClick={() => handleDelete(s.subscription_id)} className="h-5 w-5 text-red-400 cursor-pointer hover:text-red-600" />
+                      */}
                     </td>
                   </tr>
                 ))

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { HelpCircle, Trash2, Edit2, Plus, X } from 'lucide-react';
+import { HelpCircle, Edit2, X } from 'lucide-react';
 import { sysAdminService } from '../../api';
 import { FAQ } from '../../types';
 
@@ -69,13 +69,14 @@ export const FAQManagement: React.FC = () => {
             console.error("Failed to save FAQ", error);
         }
     };
-
+    /*
     const handleDelete = async (id: number) => {
         if (window.confirm("Are you sure you want to delete (hide) this FAQ?")) {
             await sysAdminService.deleteFaq(id);
             fetchFaqs();
         }
     };
+    */
 
     return (
         <div className="animate-in fade-in duration-500">
@@ -86,6 +87,7 @@ export const FAQManagement: React.FC = () => {
                         <HelpCircle className="h-5 w-5 text-white" />
                     </div>
                     <h2 className="text-xl font-bold text-gray-900">FAQ Management</h2>
+                    {/*
                     <div className="ml-auto">
                         <button
                             onClick={() => handleOpenModal()}
@@ -94,6 +96,7 @@ export const FAQManagement: React.FC = () => {
                             <Plus className="w-4 h-4" /> Add FAQ
                         </button>
                     </div>
+                    */}
                 </div>
 
                 <div className="space-y-4">
@@ -115,10 +118,12 @@ export const FAQManagement: React.FC = () => {
                                         onClick={() => handleOpenModal(faq)}
                                         className="h-5 w-5 text-blue-400 cursor-pointer hover:text-blue-600 transition-colors"
                                     />
+                                    {/*
                                     <Trash2
                                         onClick={() => handleDelete(faq.faq_id)}
                                         className="h-5 w-5 text-red-400 cursor-pointer hover:text-red-600 transition-colors"
                                     />
+                                    */}
                                 </div>
                             </div>
                         ))

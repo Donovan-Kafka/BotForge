@@ -190,31 +190,31 @@ def create_feature():
     if err:
         return err
     
-    payload = request.get_json(force=True) or {}
-    name = (payload.get("name") or "").strip()
-    description = (payload.get("description") or "").strip()
+    # payload = request.get_json(force=True) or {}
+    # name = (payload.get("name") or "").strip()
+    # description = (payload.get("description") or "").strip()
 
-    if not name:
-        return jsonify({"ok": False, "error": "Feature name is required."}), 400
-    if len(name) > 50:
-        return jsonify({"ok": False, "error": "Feature name max length is 50."}), 400
-    if description and len(description) > 255:
-        return jsonify({"ok": False, "error": "Description max length is 255."}), 400
+    # if not name:
+    #     return jsonify({"ok": False, "error": "Feature name is required."}), 400
+    # if len(name) > 50:
+    #     return jsonify({"ok": False, "error": "Feature name max length is 50."}), 400
+    # if description and len(description) > 255:
+    #     return jsonify({"ok": False, "error": "Description max length is 255."}), 400
 
-    feature = Feature(name=name, description=description or None)
-    db.session.add(feature)
-    db.session.commit()
+    # feature = Feature(name=name, description=description or None)
+    # db.session.add(feature)
+    # db.session.commit()
 
-    return jsonify({
-        "ok": True,
-        "message": "Feature created.",
-        "feature": {
-            "feature_id": feature.feature_id,
-            "name": feature.name,
-            "description": feature.description
-        }
-    }), 201
-
+    # return jsonify({
+    #     "ok": True,
+    #     "message": "Feature created.",
+    #     "feature": {
+    #         "feature_id": feature.feature_id,
+    #         "name": feature.name,
+    #         "description": feature.description
+    #     }
+    # }), 201
+    return jsonify({"ok": False, "error": "Create feature is disabled (edit-only)."}), 405
 
 @sysadmin_bp.put("/features/<int:feature_id>")
 def update_feature(feature_id):
@@ -262,14 +262,15 @@ def delete_feature(feature_id):
     if err:
         return err
 
-    feature = Feature.query.get(feature_id)
-    if not feature:
-        return jsonify({"ok": False, "error": "Feature not found."}), 404
+    # feature = Feature.query.get(feature_id)
+    # if not feature:
+    #     return jsonify({"ok": False, "error": "Feature not found."}), 404
 
-    db.session.delete(feature)
-    db.session.commit()
+    # db.session.delete(feature)
+    # db.session.commit()
 
-    return jsonify({"ok": True, "message": "Feature deleted."}), 200
+    # return jsonify({"ok": True, "message": "Feature deleted."}), 200
+    return jsonify({"ok": False, "error": "Delete feature is disabled (edit-only)."}), 405
 
 @sysadmin_bp.get("/faq")
 def list_faq_admin():
@@ -299,46 +300,47 @@ def create_faq_admin():
     if err:
         return err
     
-    payload = request.get_json(force=True) or {}
-    question = (payload.get("question") or "").strip()
-    answer = (payload.get("answer") or "").strip()
+    # payload = request.get_json(force=True) or {}
+    # question = (payload.get("question") or "").strip()
+    # answer = (payload.get("answer") or "").strip()
 
-    # status: 0 active, 1 hidden
-    status = payload.get("status", 0)
-    display_order = payload.get("display_order", 0)
-    user_id = payload.get("user_id")
+    # # status: 0 active, 1 hidden
+    # status = payload.get("status", 0)
+    # display_order = payload.get("display_order", 0)
+    # user_id = payload.get("user_id")
 
-    if not question:
-        return jsonify({"ok": False, "error": "Question is required."}), 400
-    if not answer:
-        return jsonify({"ok": False, "error": "Answer is required."}), 400
-    if len(question) > 255:
-        return jsonify({"ok": False, "error": "Question max length is 255."}), 400
-    if user_id is None:
-        return jsonify({"ok": False, "error": "user_id is required."}), 400
+    # if not question:
+    #     return jsonify({"ok": False, "error": "Question is required."}), 400
+    # if not answer:
+    #     return jsonify({"ok": False, "error": "Answer is required."}), 400
+    # if len(question) > 255:
+    #     return jsonify({"ok": False, "error": "Question max length is 255."}), 400
+    # if user_id is None:
+    #     return jsonify({"ok": False, "error": "user_id is required."}), 400
 
-    faq = FAQ(
-        question=question,
-        answer=answer,
-        status=int(status),
-        display_order=int(display_order),
-        user_id=int(user_id),
-    )
-    db.session.add(faq)
-    db.session.commit()
+    # faq = FAQ(
+    #     question=question,
+    #     answer=answer,
+    #     status=int(status),
+    #     display_order=int(display_order),
+    #     user_id=int(user_id),
+    # )
+    # db.session.add(faq)
+    # db.session.commit()
 
-    return jsonify({
-        "ok": True,
-        "message": "FAQ created.",
-        "faq": {
-            "faq_id": faq.faq_id,
-            "question": faq.question,
-            "answer": faq.answer,
-            "status": faq.status,
-            "display_order": faq.display_order,
-            "user_id": faq.user_id
-        }
-    }), 201
+    # return jsonify({
+    #     "ok": True,
+    #     "message": "FAQ created.",
+    #     "faq": {
+    #         "faq_id": faq.faq_id,
+    #         "question": faq.question,
+    #         "answer": faq.answer,
+    #         "status": faq.status,
+    #         "display_order": faq.display_order,
+    #         "user_id": faq.user_id
+    #     }
+    # }), 201
+    return jsonify({"ok": False, "error": "Create FAQ is disabled (edit-only)."}), 405
 
 @sysadmin_bp.put("/faq/<int:faq_id>")
 def update_faq_admin(faq_id):
@@ -395,13 +397,14 @@ def delete_faq_admin(faq_id):
     if err:
         return err
     
-    faq = FAQ.query.get(faq_id)
-    if not faq:
-        return jsonify({"ok": False, "error": "FAQ not found."}), 404
+    # faq = FAQ.query.get(faq_id)
+    # if not faq:
+    #     return jsonify({"ok": False, "error": "FAQ not found."}), 404
 
-    faq.status = 1  # hidden
-    db.session.commit()
-    return jsonify({"ok": True, "message": "FAQ hidden (soft-deleted)."}), 200
+    # faq.status = 1  # hidden
+    # db.session.commit()
+    # return jsonify({"ok": True, "message": "FAQ hidden (soft-deleted)."}), 200
+    return jsonify({"ok": False, "error": "Delete/hide FAQ is disabled (edit-only)."}), 405
 
 
 def _require_sysadmin():
@@ -826,57 +829,58 @@ def create_subscription():
     if err:
         return err
 
-    payload = request.get_json(force=True) or {}
-    name = (payload.get("name") or "").strip()
-    description = (payload.get("description") or "").strip() or None
+    # payload = request.get_json(force=True) or {}
+    # name = (payload.get("name") or "").strip()
+    # description = (payload.get("description") or "").strip() or None
 
-    # price: accept number or string
-    price = payload.get("price", None)
-    status = payload.get("status", 0)
+    # # price: accept number or string
+    # price = payload.get("price", None)
+    # status = payload.get("status", 0)
 
-    if not name:
-        return jsonify({"ok": False, "error": "name is required."}), 400
-    if len(name) > 50:
-        return jsonify({"ok": False, "error": "name max length is 50."}), 400
-    if description and len(description) > 255:
-        return jsonify({"ok": False, "error": "description max length is 255."}), 400
+    # if not name:
+    #     return jsonify({"ok": False, "error": "name is required."}), 400
+    # if len(name) > 50:
+    #     return jsonify({"ok": False, "error": "name max length is 50."}), 400
+    # if description and len(description) > 255:
+    #     return jsonify({"ok": False, "error": "description max length is 255."}), 400
 
-    if price is None:
-        return jsonify({"ok": False, "error": "price is required."}), 400
-    try:
-        price_val = float(price)
-    except (TypeError, ValueError):
-        return jsonify({"ok": False, "error": "price must be a number."}), 400
-    if price_val < 0:
-        return jsonify({"ok": False, "error": "price must be >= 0."}), 400
+    # if price is None:
+    #     return jsonify({"ok": False, "error": "price is required."}), 400
+    # try:
+    #     price_val = float(price)
+    # except (TypeError, ValueError):
+    #     return jsonify({"ok": False, "error": "price must be a number."}), 400
+    # if price_val < 0:
+    #     return jsonify({"ok": False, "error": "price must be >= 0."}), 400
 
-    try:
-        status_val = int(status)
-    except (TypeError, ValueError):
-        return jsonify({"ok": False, "error": "status must be 0 (active) or 1 (inactive)."}), 400
-    if status_val not in (0, 1):
-        return jsonify({"ok": False, "error": "status must be 0 (active) or 1 (inactive)."}), 400
+    # try:
+    #     status_val = int(status)
+    # except (TypeError, ValueError):
+    #     return jsonify({"ok": False, "error": "status must be 0 (active) or 1 (inactive)."}), 400
+    # if status_val not in (0, 1):
+    #     return jsonify({"ok": False, "error": "status must be 0 (active) or 1 (inactive)."}), 400
 
-    s = Subscription(
-        name=name,
-        price=price_val,
-        status=status_val,
-        description=description
-    )
-    db.session.add(s)
-    db.session.commit()
+    # s = Subscription(
+    #     name=name,
+    #     price=price_val,
+    #     status=status_val,
+    #     description=description
+    # )
+    # db.session.add(s)
+    # db.session.commit()
 
-    return jsonify({
-        "ok": True,
-        "message": "Subscription created.",
-        "subscription": {
-            "subscription_id": s.subscription_id,
-            "name": s.name,
-            "price": float(s.price),
-            "status": int(s.status),
-            "description": s.description
-        }
-    }), 201
+    # return jsonify({
+    #     "ok": True,
+    #     "message": "Subscription created.",
+    #     "subscription": {
+    #         "subscription_id": s.subscription_id,
+    #         "name": s.name,
+    #         "price": float(s.price),
+    #         "status": int(s.status),
+    #         "description": s.description
+    #     }
+    # }), 201
+    return jsonify({"ok": False, "error": "Create subscription plan is disabled (edit-only)."}), 405
 
 @sysadmin_bp.put("/subscriptions/<int:subscription_id>")
 def update_subscription(subscription_id):
@@ -937,41 +941,35 @@ def update_subscription(subscription_id):
 
 @sysadmin_bp.delete("/subscriptions/<int:subscription_id>")
 def delete_subscription(subscription_id):
-    """
-    IMPORTANT:
-    - Since organisation.subscription_id references subscription,
-      hard delete may fail if any organisation is using it.
-    - SAFE delete:
-        If any org references it -> set status=1 (inactive) (soft-delete)
-        Else -> hard delete (also removes subscription_features via manual delete below)
-    """
+    
     _, err = _require_sysadmin()
     if err:
         return err
 
-    s = Subscription.query.get(subscription_id)
-    if not s:
-        return jsonify({"ok": False, "error": "Subscription not found."}), 404
+    # s = Subscription.query.get(subscription_id)
+    # if not s:
+    #     return jsonify({"ok": False, "error": "Subscription not found."}), 404
 
-    # Check if referenced by any org 
-    in_use = Organisation.query.filter(Organisation.subscription_id == subscription_id).first() is not None
+    # # Check if referenced by any org 
+    # in_use = Organisation.query.filter(Organisation.subscription_id == subscription_id).first() is not None
 
-    if in_use:
-        s.status = 1
-        db.session.commit()
-        return jsonify({
-            "ok": True,
-            "message": "Subscription is in use; set to inactive instead of deleting.",
-            "subscription_id": s.subscription_id,
-            "status": int(s.status)
-        }), 200
+    # if in_use:
+    #     s.status = 1
+    #     db.session.commit()
+    #     return jsonify({
+    #         "ok": True,
+    #         "message": "Subscription is in use; set to inactive instead of deleting.",
+    #         "subscription_id": s.subscription_id,
+    #         "status": int(s.status)
+    #     }), 200
 
-    # Not used -> safe to hard delete
-    SubscriptionFeature.query.filter(SubscriptionFeature.subscription_id == subscription_id).delete()
-    db.session.delete(s)
-    db.session.commit()
+    # # Not used -> safe to hard delete
+    # SubscriptionFeature.query.filter(SubscriptionFeature.subscription_id == subscription_id).delete()
+    # db.session.delete(s)
+    # db.session.commit()
 
-    return jsonify({"ok": True, "message": "Subscription deleted."}), 200
+    # return jsonify({"ok": True, "message": "Subscription deleted."}), 200
+    return jsonify({"ok": False, "error": "Delete subscription plan is disabled (edit-only). Use status=inactive via update instead."}), 405
 
 @sysadmin_bp.get("/subscriptions/<int:subscription_id>/features")
 def get_subscription_features(subscription_id):

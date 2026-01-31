@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Bot, Trash2, Edit2, Plus, X } from 'lucide-react';
+import { Bot, Edit2, X } from 'lucide-react';
 import { sysAdminService } from '../../api';
 import { Feature } from '../../types';
 
@@ -56,14 +56,14 @@ export const FeatureManagement: React.FC = () => {
       console.error("Failed to save feature", error);
     }
   };
-
+  /*
   const handleDelete = async (id: number) => {
     if (window.confirm("Are you sure you want to delete this feature?")) {
       await sysAdminService.deleteFeature(id);
       fetchFeatures();
     }
   };
-
+  */
   return (
     <div className="animate-in fade-in duration-500">
       {/* List View */}
@@ -73,6 +73,7 @@ export const FeatureManagement: React.FC = () => {
             <Bot className="h-5 w-5 text-white" />
           </div>
           <h2 className="text-xl font-bold text-gray-900">Feature Management</h2>
+          {/*
           <div className="ml-auto">
             <div className="ml-auto">
               <button
@@ -83,6 +84,7 @@ export const FeatureManagement: React.FC = () => {
               </button>
             </div>
           </div>
+          */}
         </div>
 
         <div className="space-y-4">
@@ -100,10 +102,12 @@ export const FeatureManagement: React.FC = () => {
                     onClick={() => handleOpenModal(f)}
                     className="h-5 w-5 text-blue-400 cursor-pointer hover:text-blue-600 transition-colors"
                   />
+                  {/*
                   <Trash2
                     onClick={() => handleDelete(f.feature_id)}
                     className="h-5 w-5 text-red-400 cursor-pointer hover:text-red-600 transition-colors"
                   />
+                  */}
                 </div>
               </div>
             ))
