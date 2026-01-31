@@ -1,7 +1,11 @@
 
+const RAW_API_URL = import.meta.env.VITE_API_URL;
 
-const API_URL = (import.meta as any).env.VITE_API_BASE_URL || 'http://127.0.0.1:5000';
+if (!RAW_API_URL) {
+    throw new Error("VITE_API_URL is not defined");
+}
 
+const API_URL = RAW_API_URL.replace(/\/$/, "");
 export interface ApiResponse<T = any> {
     ok: boolean;
     error?: string;
