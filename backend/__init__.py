@@ -27,7 +27,9 @@ def create_app():
         raise RuntimeError("MONGO_DB_NAME not set")
 
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-        "pool_pre_ping": True
+        "pool_pre_ping": True,
+        "pool_size": 2,
+        "max_overflow": 0,
     }
 
     db.init_app(app)
