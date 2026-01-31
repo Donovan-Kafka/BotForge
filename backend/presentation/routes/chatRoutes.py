@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from flask_cors import cross_origin
 from application.ai.chatbot_service import ChatbotService
 from application.ai.intent_service_embed import EmbeddingIntentService
 from application.ai.template_engine import TemplateEngine
@@ -13,7 +14,8 @@ import traceback
 chat_bp = Blueprint("chat", __name__)
 
 # GET /chat/welcome
-@chat_bp.get("/chat/welcome")
+@chat_bp.route("/chat/welcome", methods=["GET", "OPTIONS"])
+@cross_origin()
 def chat_welcome():
     company_id = request.args.get("company_id")
     session_id = request.args.get("session_id")  # optional
@@ -53,7 +55,8 @@ def chat_welcome():
         return jsonify({"ok": False, "error": str(e)}), 500
 
 # POST /chat
-@chat_bp.post("/chat")
+@chat_bp.route("/chat", methods=["POST", "OPTIONS"])
+@cross_origin()
 def chat():
     payload = request.get_json(force=True)
     company_id = payload.get("company_id")

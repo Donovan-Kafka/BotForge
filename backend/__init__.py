@@ -5,33 +5,56 @@ from dotenv import load_dotenv
 import os
 
 db = SQLAlchemy()
-cors = CORS()
+
 
 def create_app():
     load_dotenv()
 
     app = Flask(__name__)
 
+    # --------------------
+    # Core config
+    # --------------------
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret")
     app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     if not app.config["SQLALCHEMY_DATABASE_URI"]:
-        raise RuntimeError("DATABASE_URL not set in .env")
+        raise RuntimeError("DATABASE_URL not set")
 
     app.config["MONGO_URI"] = os.getenv("MONGO_URI")
     app.config["MONGO_DB_NAME"] = os.getenv("MONGO_DB_NAME")
 
     if not app.config["MONGO_URI"]:
-        raise RuntimeError("MONGO_URI not set in .env")
+        raise RuntimeError("MONGO_URI not set")
     if not app.config["MONGO_DB_NAME"]:
-        raise RuntimeError("MONGO_DB_NAME not set in .env")
-    
+        raise RuntimeError("MONGO_DB_NAME not set")
+
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
         "pool_pre_ping": True
     }
+
     db.init_app(app)
-    cors.init_app(app, resources={r"/*": {"origins": "*"}})
+    
+    def cors_origin_validator(origin):
+        # Allow same-origin / server-side calls
+        if origin is None:
+            return True
+
+        if origin == "https://botforge-1.onrender.com":
+            return True
+
+        if origin.startswith("https://"):
+            return True
+
+        return False
+
+    CORS(
+        app,
+        origins=cors_origin_validator,
+        supports_credentials=False,   # IMPORTANT for embeds
+        resources={r"/api/*": {"origins": cors_origin_validator}},
+    )
 
     from presentation.routes.unregisteredAPI import unregistered_bp
     from presentation.routes.faqAPI import faq_bp
@@ -45,7 +68,7 @@ def create_app():
     from presentation.routes.subscriptionsAPI import subscriptions_bp
     from presentation.routes.orgAdminAPI import org_admin_bp
     from presentation.routes.notificationsAPI import notifications_bp
-    
+
     app.register_blueprint(unregistered_bp, url_prefix="/api/public")
     app.register_blueprint(faq_bp, url_prefix="/api/public")
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
