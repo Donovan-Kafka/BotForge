@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { LandingPage } from './components/LandingPage';
@@ -127,9 +128,22 @@ export default function App() {
     localStorage.setItem('user', JSON.stringify(user));
   };
 
+  // backend warm up (runs on site visit)
+  useEffect(() => {
+    fetch("https://botforge-xrki.onrender.com/health")
+      .catch(() => {
+        // Ignore errors – backend may be cold starting
+      });
+  }, []);
+
   return (
     <BrowserRouter>
-      <AppContent user={user} setUser={setUser} handleLoginSuccess={handleLoginSuccess} />
+      <AppContent
+        user={user}
+        setUser={setUser}
+        handleLoginSuccess={handleLoginSuccess}
+      />
     </BrowserRouter>
   );
 }
+
