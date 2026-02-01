@@ -3,7 +3,7 @@ from __init__ import db
 from models import Organisation, Feedback, AppUser, FAQ, OrgRole
 from sqlalchemy import desc
 from application.auth_service import (
-    register_org_admin, confirm_email, login, update_org_profile
+    register_org_admin, confirm_email, login, update_org_profile, register_patron
 )
 
 unregistered_bp = Blueprint("unregistered", __name__)
@@ -177,3 +177,10 @@ def list_public_faq():
             } for f in rows
         ]
     }), 200
+
+#patron
+@unregistered_bp.post("/patron/register")
+def patron_register():
+    payload = request.get_json(force=True) or {}
+    result = register_patron(payload)
+    return jsonify(result), (200 if result.get("ok") else 400)

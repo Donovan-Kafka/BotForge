@@ -90,6 +90,15 @@ export const publicService = {
     async getSubscriptionPlans() {
         return api.get<any>('/api/subscriptions/active');
     },
+
+    async registerPatron(data: {
+        username: string;
+        email: string;
+        password: string;
+        confirmPassword: string;
+    }) {
+        return api.post<any>('/api/public/patron/register', data);
+    },
 };
 
 export const faqService = {

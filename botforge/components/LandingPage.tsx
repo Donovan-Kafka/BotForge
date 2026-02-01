@@ -65,12 +65,33 @@ export const LandingPage: React.FC = () => {
                 to="/register"
                 className="bg-white text-blue-600 hover:bg-gray-100 font-semibold py-3 px-8 rounded shadow-lg transition-all transform hover:scale-105 inline-block"
               >
-                Register Now
+                Register as an Organisation
               </Link>
             </div>
           </div>
         </div>
       </div>
+
+
+      {/* Patron Access Section */}
+      <div className="bg-white py-16 border-b border-gray-200">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">
+            Just here to chat with a bot?
+          </h2>
+          <p className="text-gray-600 text-lg mb-8">
+            Register as a patron to explore and interact with available chatbots.
+          </p>
+
+          <Link
+            to="/patron/register"
+            className="inline-block bg-blue-600 text-white hover:bg-blue-700 font-semibold py-3 px-10 rounded-lg shadow-md transition-all transform hover:scale-105"
+          >
+            Register as a Patron
+          </Link>
+        </div>
+      </div>
+
 
       {/* Features Section */}
       <div id="features" className="bg-blue-50 py-20">

@@ -49,12 +49,19 @@ export const AdminAnalytics: React.FC = () => {
 
   // 1. Fetch User Status (Active vs Inactive) from new endpoint
   const fetchUserStatus = async () => {
-    const res = await sysAdminService.getDashboardUserStatus();
-    if (res.ok) {
+    const res = await sysAdminService.listUsers();
+    if (res.ok && res.users) {
+      const nonSysAdminUsers = res.users.filter(
+        (u: any) => u.system_role_id !== 0 && u.system_role_id !== "0"
+      );
+
+      const active = nonSysAdminUsers.filter((u: any) => Boolean(u.status) === true).length;
+      const inactive = nonSysAdminUsers.filter((u: any) => Boolean(u.status) === false).length;
+
       setUserStatus({
-        active: res.active,
-        inactive: res.inactive,
-        total: res.total
+        active,
+        inactive,
+        total: nonSysAdminUsers.length
       });
     }
   };
@@ -71,17 +78,24 @@ export const AdminAnalytics: React.FC = () => {
   const fetchRoleAndOrgStats = async () => {
     const res = await sysAdminService.listUsers();
     if (res.ok && res.users) {
+
+      const nonSysAdminUsers = res.users.filter(
+        (u: any) => Number(u.system_role_id) !== 0
+      );
       // Calculate Role Distribution
       const roles: Record<string, number> = {};
-      res.users.forEach((u: any) => {
+      nonSysAdminUsers.forEach((u: any) => {
         const roleName = u.system_role_name || u.org_role_name || 'Unknown';
         roles[roleName] = (roles[roleName] || 0) + 1;
       });
-      const roleData = Object.keys(roles).map(name => ({ name, value: roles[name] }));
-      setRoleDistribution(roleData);
+      setRoleDistribution(Object.keys(roles).map(name => ({ name, value: roles[name] })));
 
       // Calculate Total Orgs
-      const uniqueOrgs = new Set(res.users.map((u: any) => u.organisation_id).filter((id: any) => id !== null));
+      const uniqueOrgs = new Set(
+        nonSysAdminUsers
+          .map((u: any) => u.organisation_id)
+          .filter((id: any) => id !== null)
+      );
       setTotalOrgs(uniqueOrgs.size);
     }
   };

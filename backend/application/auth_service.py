@@ -414,3 +414,73 @@ def update_org_profile(payload: dict) -> dict:
             "promotions_note": retail.promotions_note if retail else None,
         } if retail else None,
     }}
+
+
+# Patron Registration
+def register_patron(payload: dict) -> dict:
+    username = (payload.get("username") or "").strip()
+    email = (payload.get("email") or "").strip().lower()
+    password = payload.get("password") or ""
+    confirm = payload.get("confirmPassword") or ""
+
+    if not username or not email or not password or not confirm:
+        return {"ok": False, "error": "Missing required fields."}
+    if password != confirm:
+        return {"ok": False, "error": "Password and confirm password do not match."}
+    if len(password) < 8:
+        return {"ok": False, "error": "Password must be at least 8 characters."}
+
+    user = AppUser(
+        username=username,
+        email=email,
+        password=generate_password_hash(password),
+        system_role_id=2,
+        org_role_id=None,
+        organisation_id=None,
+        status=False
+    )
+    db.session.add(user)
+
+    try:
+        db.session.commit()
+    except IntegrityError as e:
+        db.session.rollback()
+        msg = str(e.orig).lower()
+        if "app_user_email_key" in msg or "email" in msg:
+            return {"ok": False, "error": "Email already registered."}
+        if "app_user_username_key" in msg or "username" in msg:
+            return {"ok": False, "error": "Username already taken."}
+        return {"ok": False, "error": "Registration failed (duplicate or invalid data)."}
+
+    token = generate_verify_token(user.user_id, user.email)
+    frontend_base = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173")
+    verify_link = f"{frontend_base}/activated?token={quote(token)}"
+
+    subject = "Verify your email for BotForge"
+    html = f"""
+    <div style="font-family: Arial, sans-serif; line-height: 1.5;">
+      <h2>Verify your email</h2>
+      <p>Please verify your email to activate your Patron account.</p>
+      <p><a href="{verify_link}">Verify email</a></p>
+      <p style="color:#666;font-size:12px;">This link expires in 24 hours.</p>
+    </div>
+    """
+    text = f"Verify your email: {verify_link} (expires in 24 hours)"
+
+    notification_service = NotificationService(NotificationRepository(), UserRepository())
+    try:
+        notification_service.send_email(to=email, subject=subject, html_content=html, text_content=text)
+        email_sent = True
+        email_error = None
+    except Exception as e:
+        email_sent = False
+        email_error = str(e)
+
+    return {
+        "ok": True,
+        "message": "Registered. Please verify your email.",
+        "user_id": user.user_id,
+        "email_sent": email_sent,
+        "email_error": email_error
+    }
+

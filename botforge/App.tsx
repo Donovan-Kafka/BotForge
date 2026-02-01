@@ -13,6 +13,8 @@ import { authService } from './api';
 import CreateCompanyProfile from './components/organisational-admin/CreateCompanyProfile/CreateCompanyProfile';
 import { ChatPage } from './components/ChatPage';
 import { SelectChat } from './components/SelectChat';
+import { PatronRegister } from './components/PatronRegister';
+import { OperatorRegister } from './components/OperatorRegister';
 
 // Wrapper to handle token verification and redirect
 const TokenHandler = () => {
@@ -62,7 +64,9 @@ function AppContent({ user, setUser, handleLoginSuccess }: { user: User | null, 
   };
 
   // Check for admin role
-  const isAdmin = user && (user.username === 'SystemAdmin' || user.role_id === 0 || user.system_role_id === 0);
+  const isSysAdmin = user?.system_role_id === 0;
+  const isOrgUser = user?.system_role_id === 1;
+  const isPatron = user?.system_role_id === 2;
 
   return (
     <>
@@ -72,7 +76,7 @@ function AppContent({ user, setUser, handleLoginSuccess }: { user: User | null, 
           <Route path="/" element={<LandingPage />} />
           <Route path="/pricing" element={<PricingPage user={user} />} />
           <Route path="/faq" element={<FAQPage />} />
-          <Route path="/login" element={<Auth view={PageView.LOGIN} onLoginSuccess={(u) => {
+          {/* <Route path="/login" element={<Auth view={PageView.LOGIN} onLoginSuccess={(u) => {
             handleLoginSuccess(u);
 
             // REDIRECTION LOGIC START
@@ -94,20 +98,56 @@ function AppContent({ user, setUser, handleLoginSuccess }: { user: User | null, 
               navigate('/create-profile');
             }
             // REDIRECTION LOGIC END
-          }} />} />
+          }} />} /> */}
+          <Route
+            path="/login"
+            element={
+              <Auth
+                view={PageView.LOGIN}
+                onLoginSuccess={(u) => {
+                  handleLoginSuccess(u);
+
+                  // role-based redirect
+                  const sysRole = u.system_role_id;
+
+                  if (sysRole === 0) {
+                    navigate('/system-admin');
+                    return;
+                  }
+
+                  if (sysRole === 2) {
+                    navigate('/selectChat');
+                    return;
+                  }
+
+                  if (!u.organisation_id || u.organisation_id <= 0) {
+                    // should not happen for sysRole=1 due to DB constraint, but safe fallback
+                    navigate('/login');
+                    return;
+                  }
+
+                  if (!u.is_profile_complete) {
+                    navigate('/create-profile');
+                  } else if (!u.subscription_id || u.subscription_id <= 0) {
+                    navigate('/dashboard?tab=subscription');
+                  } else {
+                    navigate('/dashboard');
+                  }
+                }}
+              />
+            }
+          />
+
           <Route path="/register" element={<Auth view={PageView.REGISTER} onLoginSuccess={() => { }} />} />
           <Route path="/activated" element={<Auth view={PageView.ACTIVATED} onLoginSuccess={() => navigate('/login')} />} />
         </Route>
 
         <Route path="/dashboard" element={
-          user ? <Dashboard onLogout={handleLogout} onSystemAdminLogin={() => navigate('/system-admin')} user={user} /> : <Navigate to="/login" />
-        } />
-        <Route path="/chatPage" element={
-          user ? <ChatPage user={user} /> : <Navigate to="/login" />
+          user && user.system_role_id === 1 ? <CreateCompanyProfile onSuccess={() => navigate('/dashboard?tab=subscription')} /> : <Navigate to="/login" />
         } />
 
         <Route path="/system-admin" element={
-          isAdmin ? <SystemAdminDashboard onLogout={handleLogout} onBackToDashboard={() => navigate('/dashboard')} user={user} /> : <Navigate to="/dashboard" />
+          user && user.system_role_id === 0 ? <SystemAdminDashboard onLogout={handleLogout} onBackToDashboard={() => navigate('/dashboard')} user={user} /> : <Navigate to="/login" />
         } />
 
         {/* Ensure the route exists for the profile page */}
@@ -116,8 +156,17 @@ function AppContent({ user, setUser, handleLoginSuccess }: { user: User | null, 
         } />
 
         <Route path="/selectChat" element={
-          user ? <SelectChat /> : <Navigate to="/login" />
+            user && user.system_role_id === 2 ? <SelectChat /> : <Navigate to="/login" />
         } />
+
+        <Route path="/chatPage" element={
+            user && user.system_role_id === 2 ? <ChatPage user={user} /> : <Navigate to="/login" />
+        }/>
+
+        <Route path="/patron/register" element={ <PatronRegister />}/>
+
+        <Route path="/operator-signup" element={ <OperatorRegister />} />
+
 
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
@@ -141,7 +190,7 @@ export default function App() {
   useEffect(() => {
     fetch("https://botforge-xrki.onrender.com/health")
       .catch(() => {
-        // Ignore errors – backend may be cold starting
+        // Ignore errors - backend may be cold starting
       });
   }, []);
 
