@@ -11,6 +11,7 @@ import { SystemAdminDashboard } from './components/SystemAdminDashboard';
 import { PageView, User } from './types';
 import { authService } from './api';
 import CreateCompanyProfile from './components/organisational-admin/CreateCompanyProfile/CreateCompanyProfile';
+import { ChatPage } from './components/ChatPage';
 
 // Wrapper to handle token verification and redirect
 const TokenHandler = () => {
@@ -99,6 +100,9 @@ function AppContent({ user, setUser, handleLoginSuccess }: { user: User | null, 
 
         <Route path="/dashboard" element={
           user ? <Dashboard onLogout={handleLogout} onSystemAdminLogin={() => navigate('/system-admin')} user={user} /> : <Navigate to="/login" />
+        } />
+        <Route path="/chat" element={
+          user ? <ChatPage user={user} /> : <Navigate to="/login" />
         } />
 
         <Route path="/system-admin" element={
