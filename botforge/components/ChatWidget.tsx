@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { MessageCircle, Send, X } from 'lucide-react';
-import { chatService } from '../api';
+import { MessageCircle, Mic, Send, X } from 'lucide-react';
+import { chatService, operatorService, orgAdminService } from '../api';
 import { User } from '../types';
 
 type ChatRole = 'user' | 'bot';
@@ -25,6 +25,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ user }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [quickReplies, setQuickReplies] = useState<string[]>([]);
   const [chatTitle, setChatTitle] = useState('Chatbot Tester');
+  const [isRecording, setIsRecording] = useState(false);
 
   const sessionId = useMemo(() => {
     const key = 'chat_widget_session_id';
@@ -36,6 +37,8 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ user }) => {
   }, []);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
     if (!scrollRef.current) return;
@@ -119,6 +122,114 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ user }) => {
     setIsLoading(false);
   };
 
+  const sendVoice = async (audioBlob: Blob) => {
+    if (!user?.organisation_id || isLoading) return;
+
+    setIsLoading(true);
+
+    const payload = {
+      organisation_id: user.organisation_id,
+      audio: audioBlob,
+      session_id: sessionId,
+      user_id: user.user_id,
+    };
+
+    const service = user.org_role_name === 'ORG_ADMIN' ? orgAdminService : operatorService;
+    const res = await service.chatVoice(payload);
+
+    if (res.ok) {
+      const transcript = res.transcript || '';
+      if (transcript) {
+        const userMessage: ChatMessage = {
+          id: `user-${Date.now()}`,
+          role: 'user',
+          text: transcript,
+          ts: Date.now(),
+        };
+        setMessages((prev) => [...prev, userMessage]);
+      }
+
+      const reply = res.reply || 'Okay.';
+      const botMessage: ChatMessage = {
+        id: `bot-${Date.now()}`,
+        role: 'bot',
+        text: reply,
+        ts: Date.now(),
+      };
+      setMessages((prev) => [...prev, botMessage]);
+      if (res.quick_replies) {
+        setQuickReplies(res.quick_replies);
+      }
+      if (res.chatbot?.name) {
+        setChatTitle(res.chatbot.name);
+      }
+    } else {
+      setMessages((prev) => [
+        ...prev,
+        { id: `bot-${Date.now()}`, role: 'bot', text: res.error || 'Voice message failed.', ts: Date.now() },
+      ]);
+    }
+
+    setIsLoading(false);
+  };
+
+  const startRecording = async () => {
+    if (isRecording || isLoading) return;
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setMessages((prev) => [
+        ...prev,
+        { id: `bot-${Date.now()}`, role: 'bot', text: 'Microphone not supported in this browser.', ts: Date.now() },
+      ]);
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const preferred = 'audio/webm;codecs=opus';
+      const mimeType = MediaRecorder.isTypeSupported(preferred) ? preferred : 'audio/webm';
+      const recorder = new MediaRecorder(stream, { mimeType });
+      chunksRef.current = [];
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        setIsRecording(false);
+        const blob = new Blob(chunksRef.current, { type: recorder.mimeType });
+        chunksRef.current = [];
+        if (blob.size > 0) {
+          await sendVoice(blob);
+        } else {
+          setMessages((prev) => [
+            ...prev,
+            { id: `bot-${Date.now()}`, role: 'bot', text: 'No audio captured.', ts: Date.now() },
+          ]);
+        }
+      };
+
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true);
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        { id: `bot-${Date.now()}`, role: 'bot', text: 'Microphone access denied.', ts: Date.now() },
+      ]);
+    }
+  };
+
+  const stopRecording = () => {
+    if (!mediaRecorderRef.current) return;
+    if (mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
+    setIsRecording(false);
+  };
+
   return (
     <div className="fixed bottom-6 right-6 z-50">
       {!isOpen && (
@@ -200,6 +311,15 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ user }) => {
                 placeholder="Type a message..."
                 className="flex-1 border border-gray-200 rounded-full px-4 py-2 text-sm outline-none focus:border-blue-500"
               />
+              <button
+                onClick={() => (isRecording ? stopRecording() : startRecording())}
+                className={`h-10 w-10 rounded-full flex items-center justify-center transition-colors ${
+                  isRecording ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+                title={isRecording ? 'Stop recording' : 'Start recording'}
+              >
+                <Mic className="h-4 w-4" />
+              </button>
               <button
                 onClick={() => sendMessage(input)}
                 className="h-10 w-10 rounded-full bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 transition-colors"

@@ -9,11 +9,19 @@ from application.invitation_service import (
 from application.user_profile_service import UserProfileService
 from application.notification_service import NotificationService
 from application.chat_history_service import ChatHistoryService
+from application.ai.chatbot_service import ChatbotService
+from application.ai.intent_service_embed import EmbeddingIntentService
+from application.ai.template_engine import TemplateEngine
+from application.ai.speech_to_text import transcribe_audio
+from application.chat_service import ChatMessageService
+from data_access.ai.company_profile_repo import CompanyProfileRepository
+from data_access.ai.chatbot_repo import ChatbotRepository
+from data_access.ai.personality_repo import PersonalityRepository
+from data_access.ai.template_repo import TemplateRepository
 from data_access.Users.users import UserRepository
 from data_access.Notifications.notifications import NotificationRepository
 from data_access.ChatMessages.chatMessages import ChatMessageRepository
 from infrastructure.mongodb.mongo_client import get_mongo_db
-
 
 operator_bp = Blueprint("operator", __name__, url_prefix="/api/operator")
 
@@ -24,6 +32,27 @@ notification_repo = NotificationRepository()
 notification_service = NotificationService(notification_repo, user_repo)
 profile_service = UserProfileService(user_repo, notification_service)
 
+def _build_chatbot_service() -> ChatbotService:
+    company_repo = CompanyProfileRepository()
+    template_repo = TemplateRepository()
+    template_engine = TemplateEngine()
+    intent_service = EmbeddingIntentService()
+    chatbot_repo = ChatbotRepository()
+    personality_repo = PersonalityRepository()
+    mongo_repo = ChatMessageRepository(get_mongo_db())
+    chat_message_service = ChatMessageService(mongo_repo)
+
+    return ChatbotService(
+        intent_service=intent_service,
+        company_repository=company_repo,
+        template_repository=template_repo,
+        template_engine=template_engine,
+        chatbot_repository=chatbot_repo,
+        personality_repository=personality_repo,
+        chat_message_service=chat_message_service,
+    )
+
+# =================================
 # Invitation & registration
 
 @operator_bp.get("/invitations/validate")
@@ -308,3 +337,62 @@ def export_operator_chat_history_csv():
             "Content-Disposition": f"attachment; filename={filename}"
         },
     )
+
+# ============================
+# Operator: voice chat (STT)
+# ============================
+
+@operator_bp.post("/chat-voice")
+def chat_voice():
+    audio_file = request.files.get("audio")
+    organisation_id = request.form.get("organisation_id") or request.args.get("organisation_id")
+    session_id = request.form.get("session_id")
+    user_id = request.form.get("user_id")
+
+    if not organisation_id:
+        return jsonify({"ok": False, "error": "organisation_id is required"}), 400
+    if not audio_file:
+        return jsonify({"ok": False, "error": "audio file is required"}), 400
+
+    audio_bytes = audio_file.read()
+    if not audio_bytes:
+        return jsonify({"ok": False, "error": "audio file is empty"}), 400
+
+    try:
+        transcript, confidence = transcribe_audio(audio_bytes)
+    except ValueError as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+    except Exception:
+        return jsonify({"ok": False, "error": "Transcription failed"}), 500
+
+    if not transcript:
+        return jsonify({"ok": False, "error": "No speech detected"}), 400
+
+    try:
+        try:
+            organisation_id = int(organisation_id)
+        except (TypeError, ValueError):
+            return jsonify({"ok": False, "error": "organisation_id must be an integer"}), 400
+
+        if user_id is not None and user_id != "":
+            try:
+                user_id = int(user_id)
+            except (TypeError, ValueError):
+                return jsonify({"ok": False, "error": "user_id must be an integer"}), 400
+        else:
+            user_id = None
+
+        chatbot_service = _build_chatbot_service()
+        result = chatbot_service.chat(
+            company_id=organisation_id,
+            message=transcript,
+            session_id=session_id,
+            user_id=user_id,
+        )
+        result["transcript"] = transcript
+        result["transcript_confidence"] = confidence
+        return jsonify(result), 200
+    except ValueError as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+    except Exception:
+        return jsonify({"ok": False, "error": "Chatbot response failed"}), 500

@@ -8,10 +8,28 @@ export interface ApiResponse<T = any> {
     [key: string]: any;
 }
 
+const buildAuthHeaders = () => {
+    const headers: any = {};
+    // DEV ONLY: Inject X-USER-ID for testing sysadmin features if not present
+    // In a real app, you'd get this from a valid auth token or user state
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+        try {
+            const u = JSON.parse(storedUser);
+            if (u && u.user_id) {
+                headers['X-USER-ID'] = u.user_id.toString();
+                console.log("[DEBUG] api.ts: Injected header X-USER-ID:", headers['X-USER-ID']);
+            }
+        } catch (e) { /* ignore */ }
+    }
+    return headers;
+};
+
 export const api = {
     async request<T>(endpoint: string, method: string, data?: any): Promise<ApiResponse<T>> {
         const headers: any = {
             'Content-Type': 'application/json',
+            ...buildAuthHeaders(),
         };
 
         // DEV ONLY: Inject X-USER-ID for testing sysadmin features if not present
@@ -25,7 +43,6 @@ export const api = {
                 }
             } catch (e) { /* ignore */ }
         }
-
         try {
             const response = await fetch(`${API_URL}${endpoint}`, {
                 method,
@@ -53,6 +70,24 @@ export const api = {
 
     async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
         return this.request(endpoint, 'DELETE');
+    },
+
+    async requestForm<T>(endpoint: string, method: string, formData: FormData): Promise<ApiResponse<T>> {
+        const headers: any = {
+            ...buildAuthHeaders(),
+        };
+
+        try {
+            const response = await fetch(`${API_URL}${endpoint}`, {
+                method,
+                headers,
+                body: formData,
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('API Error:', error);
+            return { ok: false, error: 'Network error or server unreachable' };
+        }
     },
 };
 
@@ -261,6 +296,19 @@ export const orgAdminService = {
     // Invitations
     async sendInvitation(data: { email: string; organisation_id: number; invited_by_user_id: number }) {
         return api.post<any>('/api/admin/invitations', data);
+    },
+
+    async chatVoice(data: { organisation_id: number; audio: Blob; session_id?: string; user_id?: number }) {
+        const form = new FormData();
+        form.append('audio', data.audio, 'speech.webm');
+        form.append('organisation_id', String(data.organisation_id));
+        if (data.session_id) {
+            form.append('session_id', data.session_id);
+        }
+        if (data.user_id) {
+            form.append('user_id', String(data.user_id));
+        }
+        return api.requestForm<any>('/api/org-admin/chat-voice', 'POST', form);
     }
 };
 
@@ -309,6 +357,19 @@ export const operatorService = {
     async getChatbotAnalytics(organisationId: number, params: { from?: string; to?: string } = {}) {
         const query = new URLSearchParams(params as any);
         return api.get<any>(`/api/operator/analytics?organisation_id=${organisationId}&${query.toString()}`);
+    },
+
+    async chatVoice(data: { organisation_id: number; audio: Blob; session_id?: string; user_id?: number }) {
+        const form = new FormData();
+        form.append('audio', data.audio, 'speech.webm');
+        form.append('organisation_id', String(data.organisation_id));
+        if (data.session_id) {
+            form.append('session_id', data.session_id);
+        }
+        if (data.user_id) {
+            form.append('user_id', String(data.user_id));
+        }
+        return api.requestForm<any>('/api/operator/chat-voice', 'POST', form);
     }
 };
 

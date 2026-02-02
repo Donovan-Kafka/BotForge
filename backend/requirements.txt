@@ -12,3 +12,5 @@ flask-cors==6.0.2
 joblib==1.5.3
 scikit-learn==1.8.0
 sentence-transformers==5.2.2
+vosk
+pydub
