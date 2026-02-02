@@ -3,7 +3,7 @@ from data_access.Features.features import FeatureRepository
 from application.Features.featureServices import GetHighlightedFeatures
 
 # BP for feature endpoints
-features_bp = Blueprint("features", __name__, url_prefix="/api")
+features_bp = Blueprint("features", __name__)
 
 
 @features_bp.get("/features/highlighted")

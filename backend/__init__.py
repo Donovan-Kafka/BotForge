@@ -36,7 +36,11 @@ def create_app():
 
     CORS(
         app,
-        resources={r"/api/public/*": {"origins": "*"}},
+        resources={
+            r"/api/public/*": {"origins": "*"},
+            r"/api/features/*": {"origins": ["http://localhost:3000", "https://botforge-1.onrender.com"]},
+            r"/api/subscriptions/*": {"origins": ["http://localhost:3000", "https://botforge-1.onrender.com"]},
+        },
         supports_credentials=False,
     )
 

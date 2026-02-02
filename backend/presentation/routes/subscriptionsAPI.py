@@ -5,7 +5,7 @@ from data_access.Organisation.organisation import OrganisationRepository
 from application.UnregisteredUsers.getActiveSubscriptions import GetActiveSubscriptions
 from application.UnregisteredUsers.choosePlan import AssignSubscriptionUseCase
 
-subscriptions_bp = Blueprint("subscriptions", __name__, url_prefix="/api")
+subscriptions_bp = Blueprint("subscriptions", __name__)
 
 
 @subscriptions_bp.get("/subscriptions/active")
