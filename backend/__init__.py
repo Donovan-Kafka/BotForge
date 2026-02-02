@@ -8,7 +8,7 @@ db = SQLAlchemy()
 
 def create_app():
     load_dotenv()
-
+    frontend_url = os.getenv("FRONTEND_BASE_URL", "http://localhost:3000")
     app = Flask(__name__)
 
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret")
@@ -33,13 +33,13 @@ def create_app():
     }
 
     db.init_app(app)
-
+    
     CORS(
         app,
         resources={
             r"/api/public/*": {"origins": "*"},
-            r"/api/features/*": {"origins": ["http://localhost:3000", "https://botforge-1.onrender.com"]},
-            r"/api/subscriptions/*": {"origins": ["http://localhost:3000", "https://botforge-1.onrender.com"]},
+            r"/api/features/*": {"origins": ["http://localhost:3000", frontend_url]},
+            r"/api/subscriptions/*": {"origins": ["http://localhost:3000", frontend_url]},
         },
         supports_credentials=False,
     )
@@ -48,13 +48,13 @@ def create_app():
     CORS(
         app,
         resources={
-            r"/api/admin/*": {"origins": ["https://botforge-1.onrender.com", "http://localhost:3000"]},
-            r"/api/operator/*": {"origins": ["https://botforge-1.onrender.com", "http://localhost:3000"]},
-            r"/api/sysadmin/*": {"origins": ["https://botforge-1.onrender.com", "http://localhost:3000"]},
-            r"/api/org-admin/*": {"origins": ["https://botforge-1.onrender.com", "http://localhost:3000"]},
-            r"/api/org-roles/*": {"origins": ["https://botforge-1.onrender.com", "http://localhost:3000"]},
-            r"/api/notifications/*": {"origins": ["https://botforge-1.onrender.com", "http://localhost:3000"]},
-            r"/api/patron/*": {"origins": ["https://botforge-1.onrender.com", "http://localhost:3000"]},
+            r"/api/admin/*": {"origins": [frontend_url, "http://localhost:3000"]},
+            r"/api/operator/*": {"origins": [frontend_url, "http://localhost:3000"]},
+            r"/api/sysadmin/*": {"origins": [frontend_url, "http://localhost:3000"]},
+            r"/api/org-admin/*": {"origins": [frontend_url, "http://localhost:3000"]},
+            r"/api/org-roles/*": {"origins": [frontend_url, "http://localhost:3000"]},
+            r"/api/notifications/*": {"origins": [frontend_url, "http://localhost:3000"]},
+            r"/api/patron/*": {"origins": [frontend_url, "http://localhost:3000"]},
         },
         supports_credentials=True,
     )
