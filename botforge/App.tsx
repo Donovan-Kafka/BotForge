@@ -208,6 +208,7 @@ export default function App() {
 
   // backend warm up (runs on site visit)
   useEffect(() => {
+    if (window.location.hostname === "localhost") return;
     fetch("https://botforge-xrki.onrender.com/health")
       .catch(() => {
         // Ignore errors - backend may be cold starting

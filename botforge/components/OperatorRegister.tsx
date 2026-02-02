@@ -22,7 +22,7 @@ export const OperatorRegister: React.FC = () => {
 
   const token = params.get("token") || "";
   
-  const API_BASE = import.meta.env.VITE_API_BASE_URL;
+  const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
   // const API_BASE = "https://botforge-xrki.onrender.com"; // backend 
   // const API_BASE = "http://localhost:5000"; // backend 
   const [loading, setLoading] = useState(true);
