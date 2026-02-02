@@ -111,7 +111,8 @@ class OrgRole(db.Model):
     organisation_id = db.Column(db.Integer, db.ForeignKey("organisation.organisation_id"), nullable=False)
     name = db.Column(db.String(50), nullable=False)
     description = db.Column(db.String(255))
-
+    is_default = db.Column(db.Boolean, nullable=False, default=False)
+    
     __table_args__ = (
         db.UniqueConstraint("organisation_id", "name", name="uq_org_role_name"),
     )

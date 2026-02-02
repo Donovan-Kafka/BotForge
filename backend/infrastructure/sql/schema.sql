@@ -134,6 +134,7 @@ CREATE TABLE org_role (
     organisation_id INT NOT NULL,
     name VARCHAR(50) NOT NULL,
     description VARCHAR(255),
+    is_default BOOLEAN NOT NULL DEFAULT FALSE,
     FOREIGN KEY (organisation_id) REFERENCES organisation(organisation_id),
     UNIQUE (organisation_id, name)
 );

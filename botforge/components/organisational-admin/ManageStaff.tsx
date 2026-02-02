@@ -274,7 +274,7 @@ export const ManageStaff: React.FC<ManageStaffProps> = ({ onBack, onCreateRole }
                             onClick={onCreateRole}
                             className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2.5 rounded-lg text-sm font-bold transition-colors shadow-md"
                         >
-                            + Create New Role
+                            + Create Custom Role
                         </button>
                     </div>
                 </div>

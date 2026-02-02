@@ -91,24 +91,25 @@ INSERT INTO org_role (organisation_id, name, description) VALUES
 
 
 INSERT INTO org_permission (code, description) VALUES
-('MANAGE_USERS', 'Invite and manage organisation users'),
-('MANAGE_FAQ', 'Create, update, and delete FAQs'),
-('VIEW_ANALYTICS', 'View chatbot analytics'),
-('MANAGE_CHATBOT', 'Create and configure chatbots');
+('MANAGE_CHATBOT', 'Customize and configure chatbot'),
+('VIEW_CHAT_HISTORY', 'View chatbot conversation history'),
+('MANAGE_USERS', 'Invite and manage organisation staff'),
+('SUBMIT_FEEDBACK', 'Submit feedback to the system'),
+('MANAGE_ACCOUNT', 'Manage user account settings'),
+('MANAGE_ORG_PROFILE', 'Manage organisation profile and settings');
 
-
-INSERT INTO org_role_permission (org_role_id, org_permission_id)
-SELECT r.org_role_id, p.org_permission_id
-FROM org_role r, org_permission p
-WHERE r.name = 'ORG_ADMIN';
-
--- Staff, sample permission: VIEW_ANALYTICS
 INSERT INTO org_role_permission (org_role_id, org_permission_id)
 SELECT r.org_role_id, p.org_permission_id
 FROM org_role r
-JOIN org_permission p ON p.code IN ('VIEW_ANALYTICS')
-WHERE r.name = 'STAFF';
+CROSS JOIN org_permission p
+WHERE r.name = 'ORG_ADMIN';
 
+INSERT INTO org_role_permission (org_role_id, org_permission_id)
+SELECT r.org_role_id, p.org_permission_id
+FROM org_role r
+JOIN org_permission p
+  ON p.code IN ('VIEW_CHAT_HISTORY', 'SUBMIT_FEEDBACK')
+WHERE r.name = 'STAFF';
 
 INSERT INTO personality (name, description, type) VALUES
 ('Friendly & Casual', 'Light-hearted and approachable', 'Casual'),

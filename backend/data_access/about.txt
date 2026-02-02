@@ -1,2 +1,0 @@
-this folder should contain the individual class for each table present in the db 
-file should connect to db to insert,update, view or delete

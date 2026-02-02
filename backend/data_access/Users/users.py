@@ -91,3 +91,28 @@ class UserRepository:
         except Exception:
             db.session.rollback()
             raise
+        
+    # ---------- ROLE USER REASSIGNMENT ----------   
+    def reassign_users_role(
+        self,
+        from_role_id: int,
+        to_role_id: int
+    ):
+        """
+        Reassign all users from one org role to another.
+        Used when deleting a custom role.
+        """
+        (
+            db.session.query(AppUser)
+            .filter(AppUser.org_role_id == from_role_id)
+            .update(
+                {AppUser.org_role_id: to_role_id},
+                synchronize_session=False
+            )
+        )
+
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise

@@ -3,11 +3,7 @@ from application.notification_service import NotificationService
 from data_access.Notifications.notifications import NotificationRepository
 from data_access.Users.users import UserRepository
 
-notifications_bp = Blueprint(
-    "notifications",
-    __name__,
-    url_prefix="/api/notifications"
-)
+notifications_bp = Blueprint("notifications", __name__, url_prefix="/api/notifications")
 
 user_repo = UserRepository()
 notification_repo = NotificationRepository()
