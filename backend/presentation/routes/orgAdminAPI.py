@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.exc import IntegrityError
 from __init__ import db
@@ -220,7 +220,7 @@ def get_chat_history():
     page = request.args.get("page", type=int) or 1
     page_size = request.args.get("page_size", type=int) or 20
 
-    repo = ChatMessageRepository(get_mongo_db(current_app))
+    repo = ChatMessageRepository(get_mongo_db())
 
     # Build date filters
     from_dt = None
@@ -314,7 +314,7 @@ def get_chatbot_analytics():
     # Inclusive end of day
     end = end.replace(hour=23, minute=59, second=59)
     # mongo query
-    repo = ChatMessageRepository(get_mongo_db(current_app))
+    repo = ChatMessageRepository(get_mongo_db())
 
     query = {
         "organisationId": organisation_id,

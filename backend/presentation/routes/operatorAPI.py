@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify
 from datetime import datetime, timedelta, timezone
 from werkzeug.security import generate_password_hash
 from sqlalchemy.exc import IntegrityError
@@ -11,10 +11,8 @@ from application.user_profile_service import UserProfileService
 from application.notification_service import NotificationService
 from data_access.Users.users import UserRepository
 from data_access.Notifications.notifications import NotificationRepository
-
 from infrastructure.mongodb.mongo_client import get_mongo_db
 from data_access.ChatMessages.chatMessages import ChatMessageRepository
-
 
 operator_bp = Blueprint("operator", __name__, url_prefix="/api/operator")
 
@@ -129,8 +127,7 @@ def get_operator_chat_history():
     date_from = request.args.get("from")
     date_to = request.args.get("to")
 
-    repo = ChatMessageRepository(get_mongo_db(current_app))
-
+    repo = ChatMessageRepository(get_mongo_db())
     query = {"organisationId": organisation_id}
 
     if q:
@@ -188,8 +185,7 @@ def get_operator_chatbot_analytics():
 
     end = end.replace(hour=23, minute=59, second=59)
 
-    repo = ChatMessageRepository(get_mongo_db(current_app))
-
+    repo = ChatMessageRepository(get_mongo_db())
     query = {
         "organisationId": organisation_id,
         "sender": "user",
