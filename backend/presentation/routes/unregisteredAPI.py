@@ -1,7 +1,5 @@
 from flask import Blueprint, request, jsonify
-from __init__ import db
 from models import Organisation, Feedback, AppUser, FAQ, OrgRole
-from sqlalchemy import desc
 from application.auth_service import (
     register_org_admin, confirm_email, login, update_org_profile, register_patron
 )
@@ -42,6 +40,10 @@ def get_org_profile(organisation_id):
             "error": "Organisation not found."
         }), 404
 
+    restaurant = org.restaurant
+    education = org.education
+    retail = org.retail
+
     return jsonify({
         "ok": True,
         "organisation": {
@@ -61,36 +63,42 @@ def get_org_profile(organisation_id):
             "business_hours": org.business_hours,
 
             # Restaurant-specific
-            "cuisine_type": org.cuisine_type,
-            "restaurant_style": org.restaurant_style,
-            "dining_options": org.dining_options,
-            "supports_reservations": org.supports_reservations,
-            "reservation_link": org.reservation_link,
-            "price_range": org.price_range,
-            "seating_capacity": org.seating_capacity,
-            "specialties": org.specialties,
+            "restaurant": {
+                "cuisine_type": restaurant.cuisine_type,
+                "restaurant_style": restaurant.restaurant_style,
+                "dining_options": restaurant.dining_options,
+                "supports_reservations": restaurant.supports_reservations,
+                "reservation_link": restaurant.reservation_link,
+                "price_range": restaurant.price_range,
+                "seating_capacity": restaurant.seating_capacity,
+                "specialties": restaurant.specialties,
+            } if restaurant else None,
 
             # Education-specific
-            "institution_type": org.institution_type,
-            "target_audience": org.target_audience,
-            "course_types": org.course_types,
-            "delivery_mode": org.delivery_mode,
-            "intake_periods": org.intake_periods,
-            "application_link": org.application_link,
-            "response_time": org.response_time,
-            "key_programs": org.key_programs,
+            "education": {
+                "institution_type": education.institution_type,
+                "target_audience": education.target_audience,
+                "course_types": education.course_types,
+                "delivery_mode": education.delivery_mode,
+                "intake_periods": education.intake_periods,
+                "application_link": education.application_link,
+                "response_time": education.response_time,
+                "key_programs": education.key_programs,
+            } if education else None,
 
             # Retail-specific
-            "retail_type": org.retail_type,
-            "product_categories": org.product_categories,
-            "has_physical_store": org.has_physical_store,
-            "has_online_store": org.has_online_store,
-            "online_store_url": org.online_store_url,
-            "delivery_options": org.delivery_options,
-            "return_policy": org.return_policy,
-            "warranty_info": org.warranty_info,
-            "payment_methods": org.payment_methods,
-            "promotions_note": org.promotions_note
+            "retail": {
+                "retail_type": retail.retail_type,
+                "product_categories": retail.product_categories,
+                "has_physical_store": retail.has_physical_store,
+                "has_online_store": retail.has_online_store,
+                "online_store_url": retail.online_store_url,
+                "delivery_options": retail.delivery_options,
+                "return_policy": retail.return_policy,
+                "warranty_info": retail.warranty_info,
+                "payment_methods": retail.payment_methods,
+                "promotions_note": retail.promotions_note,
+            } if retail else None,
         }
     }), 200
 
@@ -154,8 +162,6 @@ def get_testimonials():
         })
 
     return jsonify({"ok": True, "testimonials": testimonials}), 200
-
-
 
 
 @unregistered_bp.get("/faq")

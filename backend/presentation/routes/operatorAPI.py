@@ -1,9 +1,8 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from datetime import datetime, timedelta, timezone
 from werkzeug.security import generate_password_hash
 from sqlalchemy.exc import IntegrityError
 
-from __init__ import db
 from application.invitation_service import (
     validate_invitation_token,
     accept_invitation_and_create_operator
@@ -12,10 +11,10 @@ from application.user_profile_service import UserProfileService
 from application.notification_service import NotificationService
 from data_access.Users.users import UserRepository
 from data_access.Notifications.notifications import NotificationRepository
-from models import Organisation, Chatbot, Personality, AppUser
 
 from infrastructure.mongodb.mongo_client import get_mongo_db
 from data_access.ChatMessages.chatMessages import ChatMessageRepository
+
 
 operator_bp = Blueprint("operator", __name__, url_prefix="/api/operator")
 
@@ -25,10 +24,7 @@ notification_repo = NotificationRepository()
 notification_service = NotificationService(notification_repo, user_repo)
 profile_service = UserProfileService(user_repo, notification_service)
 
-# =================================
 # Invitation & registration
-# =================================
-
 @operator_bp.get("/invitations/validate")
 def validate():
     token = request.args.get("token", "")
@@ -53,10 +49,7 @@ def operator_register():
     result = accept_invitation_and_create_operator(payload, notification_service)
     return jsonify(result), (200 if result.get("ok") else 400)
 
-# =================================
 # Operator account management
-# =================================
-
 @operator_bp.put("/profile")
 def update_operator_profile():
     data = request.get_json() or {}
@@ -125,10 +118,7 @@ def delete_operator_account():
 
     return {"message": "Account deactivated"}, 200
 
-# =================================
 # Operator: chat history (MongoDB)
-# =================================
-
 @operator_bp.get("/chat-history")
 def get_operator_chat_history():
     organisation_id = request.args.get("organisation_id", type=int)
@@ -139,7 +129,7 @@ def get_operator_chat_history():
     date_from = request.args.get("from")
     date_to = request.args.get("to")
 
-    repo = ChatMessageRepository(get_mongo_db())
+    repo = ChatMessageRepository(get_mongo_db(current_app))
 
     query = {"organisationId": organisation_id}
 
@@ -176,10 +166,7 @@ def get_operator_chat_history():
         "messages": results
     }), 200
 
-# =================================
 # Operator: analytics (MongoDB)
-# =================================
-
 @operator_bp.get("/analytics")
 def get_operator_chatbot_analytics():
     organisation_id = request.args.get("organisation_id", type=int)
@@ -201,7 +188,7 @@ def get_operator_chatbot_analytics():
 
     end = end.replace(hour=23, minute=59, second=59)
 
-    repo = ChatMessageRepository(get_mongo_db())
+    repo = ChatMessageRepository(get_mongo_db(current_app))
 
     query = {
         "organisationId": organisation_id,

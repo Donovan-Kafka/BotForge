@@ -1,11 +1,11 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.exc import IntegrityError
 from __init__ import db
 from application.user_service import UserService
 from application.user_profile_service import UserProfileService
 from data_access.Users.users import UserRepository
-from models import Organisation, Chatbot, Personality, AppUser
+from models import Organisation, Chatbot, Personality
 from infrastructure.mongodb.mongo_client import get_mongo_db
 from data_access.ChatMessages.chatMessages import ChatMessageRepository
 from application.notification_service import NotificationService
@@ -71,11 +71,7 @@ def _validate_chatbot_payload(data: dict) -> str | None:
 
     return None
 
-
-# =================================
 # ORG ADMIN: manage organisation users
-# =================================
-
 @org_admin_bp.get("/users")
 def list_org_users():
     organisation_id = request.args.get("organisation_id", type=int)
@@ -120,11 +116,7 @@ def update_user_role(user_id: int):
         "org_role_name": updated_user.org_role.name if updated_user.org_role else None
     }, 200
 
-
-# =================================
 # ORG ADMIN: own account management
-# =================================
-
 @org_admin_bp.put("/profile")
 def update_admin_profile():
     data = request.get_json() or {}
@@ -179,8 +171,6 @@ def change_admin_password():
 
     return {"message": "Password updated"}, 200
 
-
-
 @org_admin_bp.delete("/account")
 def deactivate_admin_account():
     data = request.get_json() or {}
@@ -197,10 +187,8 @@ def deactivate_admin_account():
     return {"message": "Account deactivated"}, 200
 
 
-# =================================
-# ORG ADMIN: personalities
-# =================================
 
+# ORG ADMIN: personalities
 @org_admin_bp.get("/personalities")
 def list_personalities():
     rows = Personality.query.order_by(Personality.personality_id.asc()).all()
@@ -219,10 +207,7 @@ def list_personalities():
     }), 200
 
 
-# =================================
 # ORG ADMIN: chat history
-# =================================
-
 @org_admin_bp.get("/chat-history")
 def get_chat_history():
     organisation_id = request.args.get("organisation_id", type=int)
@@ -235,7 +220,7 @@ def get_chat_history():
     page = request.args.get("page", type=int) or 1
     page_size = request.args.get("page_size", type=int) or 20
 
-    repo = ChatMessageRepository(get_mongo_db())
+    repo = ChatMessageRepository(get_mongo_db(current_app))
 
     # Build date filters
     from_dt = None
@@ -302,12 +287,7 @@ def get_chat_history():
         "messages": results,
     }), 200
 
-
-
-# =================================
 # ORG ADMIN: chatbot analytics
-# =================================
-
 @org_admin_bp.get("/analytics")
 def get_chatbot_analytics():
     organisation_id = request.args.get("organisation_id", type=int)
@@ -334,7 +314,7 @@ def get_chatbot_analytics():
     # Inclusive end of day
     end = end.replace(hour=23, minute=59, second=59)
     # mongo query
-    repo = ChatMessageRepository(get_mongo_db())
+    repo = ChatMessageRepository(get_mongo_db(current_app))
 
     query = {
         "organisationId": organisation_id,
@@ -408,11 +388,7 @@ def get_chatbot_analytics():
         },
     }), 200
 
-
-# =================================
 # ORG ADMIN: customize chatbot
-# =================================
-
 @org_admin_bp.get("/chatbot")
 def get_chatbot_settings():
     organisation_id = request.args.get("organisation_id", type=int)
