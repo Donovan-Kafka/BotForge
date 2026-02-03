@@ -85,7 +85,7 @@ export const CreateRole: React.FC<CreateRoleProps> = ({ onBack }) => {
       </div>
 
       <div className="text-center mb-10">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Create New Role</h2>
+        <h2 className="text-3xl font-bold text-gray-900 mb-2">Create New Custom Role</h2>
         <p className="text-gray-500">Define the role name and select access rights.</p>
       </div>
 
