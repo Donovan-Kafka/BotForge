@@ -1,5 +1,6 @@
 from backend import db
 from sqlalchemy.sql import func
+from datetime import datetime
 
 # =========================
 # Organisation (base)
@@ -180,6 +181,16 @@ class SubscriptionFeature(db.Model):
     subscription_id = db.Column(db.Integer, db.ForeignKey("subscription.subscription_id"), primary_key=True)
     feature_id = db.Column(db.Integer, db.ForeignKey("feature.feature_id"), primary_key=True)
     display_order = db.Column(db.SmallInteger)
+
+
+class FeaturedVideo(db.Model):
+    __tablename__ = "featured_video"
+
+    id = db.Column(db.SmallInteger, primary_key=True)  # constrained to id=1
+    url = db.Column(db.String(255))
+    title = db.Column(db.String(100))
+    description = db.Column(db.String(255))
+    updated_date = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 # =========================

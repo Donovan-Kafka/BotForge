@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 export const LandingPage: React.FC = () => {
   const [features, setFeatures] = useState<any[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [featuredVideo, setFeaturedVideo] = useState<{ url: string; title: string; description: string; } | null>(null);
 
   useEffect(() => {
     const fetchFeatures = async () => {
@@ -34,8 +35,25 @@ export const LandingPage: React.FC = () => {
       }
     };
 
+    const fetchFeaturedVideo = async () => {
+      try {
+        const res = await publicService.getFeaturedVideo();
+        if (res.ok && res.video) {
+          setFeaturedVideo({
+            url: res.video.url || "",
+            title: res.video.title || "",
+            description: res.video.description || "",
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch featured video", error);
+      }
+    };
+
+
     fetchFeatures();
     fetchTestimonials();
+    fetchFeaturedVideo();
   }, []);
 
   return (
@@ -101,14 +119,34 @@ export const LandingPage: React.FC = () => {
             <p className="text-gray-600 text-lg">Forge the ultimate bot for your own needs.</p>
           </div>
 
-          {/* Video Placeholder */}
-          <div className="max-w-4xl mx-auto mb-20 bg-black rounded-lg aspect-video flex items-center justify-center relative shadow-2xl">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="bg-white/20 p-6 rounded-full backdrop-blur-sm cursor-pointer hover:bg-white/30 transition-all">
-                <Play className="h-12 w-12 text-white fill-white" />
-              </div>
+          {/* Featured Video */}
+          <div className="max-w-4xl mx-auto mb-10">
+            <div className="bg-black rounded-lg aspect-video overflow-hidden shadow-2xl border border-black/10">
+              {featuredVideo?.url ? (
+                <iframe
+                  className="w-full h-full"
+                  src={featuredVideo.url}
+                  title={featuredVideo.title || "Featured video"}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-white/70">
+                  No featured video set yet.
+                </div>
+              )}
             </div>
-            <span className="absolute bottom-4 right-4 text-white font-mono bg-black/50 px-2 py-1 rounded">6:34 AM</span>
+
+            {(featuredVideo?.title || featuredVideo?.description) && (
+              <div className="text-center mt-4">
+                {featuredVideo?.title && (
+                  <h3 className="text-xl font-bold text-gray-900">{featuredVideo.title}</h3>
+                )}
+                {featuredVideo?.description && (
+                  <p className="text-gray-600 mt-1">{featuredVideo.description}</p>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">

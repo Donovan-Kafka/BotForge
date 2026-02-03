@@ -85,6 +85,21 @@ export const AdminAnalytics: React.FC = () => {
       // Calculate Role Distribution
       const roles: Record<string, number> = {};
 
+      const prettifyRole = (raw: string) => {
+        const key = String(raw || "").trim().toUpperCase();
+
+        if (key === "ORG_ADMIN") return "Org Admin";
+        if (key === "PATRON") return "Patron";
+        if (key === "STAFF") return "Staff";
+
+        // fallback: turn "SOME_ROLE_NAME" -> "Some Role Name"
+        return key
+          .toLowerCase()
+          .split("_")
+          .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(" ");
+      };
+
       nonSysAdminUsers.forEach((u: any) => {
         const sysRoleId = Number(u.system_role_id);
 
@@ -96,7 +111,13 @@ export const AdminAnalytics: React.FC = () => {
           roleName = u.org_role_name || 'ORG USER';
         }
 
-        roles[roleName] = (roles[roleName] || 0) + 1;
+        const rawKey = String(roleName || "").trim().toUpperCase();
+
+        if (rawKey === "STAFF_CUSTOMCHATBOT") return;
+
+        const displayName = prettifyRole(rawKey);
+
+        roles[displayName] = (roles[displayName] || 0) + 1;
       });
 
       setRoleDistribution(

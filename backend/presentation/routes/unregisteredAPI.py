@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from backend.models import Organisation, Feedback, AppUser, FAQ, OrgRole
+from backend.models import Organisation, Feedback, AppUser, FAQ, OrgRole, FeaturedVideo
 from backend.application.auth_service import (
     register_org_admin, confirm_email, login, update_org_profile, register_patron
 )
@@ -184,9 +184,38 @@ def list_public_faq():
         ]
     }), 200
 
+
 #patron
 @unregistered_bp.post("/patron/register")
 def patron_register():
     payload = request.get_json(force=True) or {}
     result = register_patron(payload)
     return jsonify(result), (200 if result.get("ok") else 400)
+
+@unregistered_bp.get("/featured-video")
+def get_featured_video():
+    row = FeaturedVideo.query.get(1)
+
+    # If table exists but row is missing, return empty defaults
+    if not row:
+        return jsonify({
+            "ok": True,
+            "video": {
+                "id": 1,
+                "url": "",
+                "title": "",
+                "description": "",
+                "updated_date": None
+            }
+        }), 200
+
+    return jsonify({
+        "ok": True,
+        "video": {
+            "id": row.id,
+            "url": row.url or "",
+            "title": row.title or "",
+            "description": row.description or "",
+            "updated_date": row.updated_date.isoformat() if row.updated_date else None
+        }
+    }), 200

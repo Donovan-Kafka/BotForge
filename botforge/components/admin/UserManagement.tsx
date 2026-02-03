@@ -226,7 +226,7 @@ export const UserManagement: React.FC = () => {
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            {tab === 'roles' ? 'Role Configuration' : 'Revoke / Access'}
+            {tab === 'roles' ? 'Role Configuration' : 'Revoke / Grant Access'}
           </button>
         ))}
       </div>

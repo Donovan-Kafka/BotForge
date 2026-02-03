@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from backend.models import Feedback, AppUser, Feature, FAQ, OrgRole, Organisation, SystemRole, OrgPermission, OrgRolePermission, Subscription, SubscriptionFeature, ChatMessage
+from backend.models import Feedback, AppUser, Feature, FAQ, OrgRole, Organisation, SystemRole, OrgPermission, OrgRolePermission, Subscription, SubscriptionFeature, ChatMessage, FeaturedVideo
 from backend import db
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func, case
@@ -293,6 +293,83 @@ def list_faq_admin():
             } for f in rows
         ]
     }), 200
+
+@sysadmin_bp.get("/featured-video")
+def sysadmin_get_featured_video():
+    _, err = _require_sysadmin()
+    if err:
+        return err
+
+    row = FeaturedVideo.query.get(1)
+    if not row:
+        # auto-create if missing (optional but convenient)
+        row = FeaturedVideo(id=1, url="", title="", description="")
+        db.session.add(row)
+        db.session.commit()
+
+    return jsonify({
+        "ok": True,
+        "video": {
+            "id": row.id,
+            "url": row.url or "",
+            "title": row.title or "",
+            "description": row.description or "",
+            "updated_date": row.updated_date.isoformat() if row.updated_date else None
+        }
+    }), 200
+
+
+@sysadmin_bp.put("/featured-video")
+def sysadmin_update_featured_video():
+    _, err = _require_sysadmin()
+    if err:
+        return err
+
+    payload = request.get_json(force=True) or {}
+
+    # allow partial updates
+    url = payload.get("url", None)
+    title = payload.get("title", None)
+    description = payload.get("description", None)
+
+    # validations based on db size
+    if url is not None and len((url or "").strip()) > 255:
+        return jsonify({"ok": False, "error": "url max length is 255."}), 400
+    if title is not None and len((title or "").strip()) > 100:
+        return jsonify({"ok": False, "error": "title max length is 100."}), 400
+    if description is not None and len((description or "").strip()) > 255:
+        return jsonify({"ok": False, "error": "description max length is 255."}), 400
+
+    row = FeaturedVideo.query.get(1)
+    if not row:
+        row = FeaturedVideo(id=1, url="", title="", description="")
+        db.session.add(row)
+
+    if url is not None:
+        row.url = (url or "").strip() or None
+    if title is not None:
+        row.title = (title or "").strip() or None
+    if description is not None:
+        row.description = (description or "").strip() or None
+
+    # respect your table default CURRENT_TIMESTAMP; but updating explicitly is clearer
+    row.updated_date = datetime.utcnow()
+
+    db.session.commit()
+
+    return jsonify({
+        "ok": True,
+        "message": "Featured video updated.",
+        "video": {
+            "id": row.id,
+            "url": row.url or "",
+            "title": row.title or "",
+            "description": row.description or "",
+            "updated_date": row.updated_date.isoformat() if row.updated_date else None
+        }
+    }), 200
+
+
 
 @sysadmin_bp.post("/faq")
 def create_faq_admin():

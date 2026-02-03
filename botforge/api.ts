@@ -130,6 +130,11 @@ export const publicService = {
     }) {
         return api.post<any>('/api/public/patron/register', data);
     },
+
+    async getFeaturedVideo() {
+        return api.get<any>('/api/public/featured-video');
+    },
+
 };
 
 export const faqService = {
@@ -169,6 +174,15 @@ export const sysAdminService = {
     async deleteFeature(featureId: number) {
         return api.delete<any>(`/api/sysadmin/features/${featureId}`);
     },
+
+    async getFeaturedVideo() {
+        return api.get<any>('/api/sysadmin/featured-video');
+    },
+
+    async updateFeaturedVideo(data: { url?: string; title?: string; description?: string }) {
+        return api.put<any>('/api/sysadmin/featured-video', data);
+    },
+
     async listUsers() {
         return api.get<any>('/api/sysadmin/users');
     },

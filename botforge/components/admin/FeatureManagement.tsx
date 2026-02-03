@@ -13,6 +13,11 @@ export const FeatureManagement: React.FC = () => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
 
+  const [videoUrl, setVideoUrl] = useState('');
+  const [videoTitle, setVideoTitle] = useState('');
+  const [videoDesc, setVideoDesc] = useState('');
+  const [isSavingVideo, setIsSavingVideo] = useState(false);
+
   const fetchFeatures = async () => {
     try {
       const res = await sysAdminService.listFeatures();
@@ -24,8 +29,23 @@ export const FeatureManagement: React.FC = () => {
     }
   };
 
+  const fetchFeaturedVideo = async () => {
+    try {
+      const res = await sysAdminService.getFeaturedVideo();
+      if (res.ok && res.video) {
+        setVideoUrl(res.video.url || '');
+        setVideoTitle(res.video.title || '');
+        setVideoDesc(res.video.description || '');
+      }
+    } catch (error) {
+      console.error("Failed to fetch featured video", error);
+    }
+  };
+
+
   useEffect(() => {
     fetchFeatures();
+    fetchFeaturedVideo();
   }, []);
 
   const handleOpenModal = (feature?: Feature) => {
@@ -39,6 +59,27 @@ export const FeatureManagement: React.FC = () => {
       setDescription('');
     }
     setIsModalOpen(true);
+  };
+
+  const handleSaveFeaturedVideo = async () => {
+    try {
+      setIsSavingVideo(true);
+      const res = await sysAdminService.updateFeaturedVideo({
+        url: videoUrl,
+        title: videoTitle,
+        description: videoDesc,
+      });
+
+      if (!res.ok) {
+        console.error(res.error || "Failed to update featured video");
+      } else {
+        fetchFeaturedVideo();
+      }
+    } catch (error) {
+      console.error("Failed to update featured video", error);
+    } finally {
+      setIsSavingVideo(false);
+    }
   };
 
   const handleSave = async () => {
@@ -66,6 +107,62 @@ export const FeatureManagement: React.FC = () => {
   */
   return (
     <div className="animate-in fade-in duration-500">
+
+      {/* Featured Video Management */}
+<div className="bg-white border border-gray-300 rounded-xl shadow-sm p-6 mb-6">
+  <h2 className="text-xl font-bold text-gray-900 mb-4">Landing Page Featured Video</h2>
+
+  <div className="space-y-4">
+    <div>
+      <label className="block text-xs font-bold mb-2 text-gray-700 uppercase">Video Embed URL</label>
+        <input
+          type="text"
+          value={videoUrl}
+          onChange={(e) => setVideoUrl(e.target.value)}
+          className="w-full bg-blue-50/50 border border-blue-200 rounded-lg p-3 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+          placeholder="e.g. https://www.youtube.com/embed/VIDEO_ID"
+        />
+        <p className="text-xs text-gray-500 mt-2">
+          Tip: use an embed link (YouTube: /embed/VIDEO_ID).
+        </p>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs font-bold mb-2 text-gray-700 uppercase">Title</label>
+          <input
+            type="text"
+            value={videoTitle}
+            onChange={(e) => setVideoTitle(e.target.value)}
+            className="w-full bg-blue-50/50 border border-blue-200 rounded-lg p-3 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+            placeholder="e.g. BotForge Walkthrough"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold mb-2 text-gray-700 uppercase">Description</label>
+          <input
+            type="text"
+            value={videoDesc}
+            onChange={(e) => setVideoDesc(e.target.value)}
+            className="w-full bg-blue-50/50 border border-blue-200 rounded-lg p-3 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+            placeholder="Short caption shown under the video"
+          />
+        </div>
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          onClick={handleSaveFeaturedVideo}
+          disabled={isSavingVideo}
+          className="bg-gray-700 text-white font-bold px-6 py-2.5 rounded-lg text-sm hover:bg-gray-800 shadow-md transition-all active:scale-95 disabled:opacity-60"
+        >
+          {isSavingVideo ? "Saving..." : "Save Featured Video"}
+        </button>
+      </div>
+    </div>
+  </div>
+
       {/* List View */}
       <div className="bg-white border border-gray-300 rounded-xl shadow-sm p-6">
         <div className="flex items-center gap-3 mb-6">
