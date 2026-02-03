@@ -1,26 +1,26 @@
-from __init__ import db
+from backend import db
 from flask import Blueprint, request, jsonify, Response, stream_with_context
 from flask_cors import cross_origin
 from datetime import datetime, timezone, timedelta
 from sqlalchemy.exc import IntegrityError
-from models import Organisation, Chatbot, Personality
-from application.user_service import UserService
-from application.user_profile_service import UserProfileService
-from application.notification_service import NotificationService
-from application.chat_history_service import ChatHistoryService
-from application.ai.chatbot_service import ChatbotService
-from application.ai.intent_service_embed import EmbeddingIntentService
-from application.ai.template_engine import TemplateEngine
-from application.ai.speech_to_text import transcribe_audio
-from application.chat_service import ChatMessageService
-from data_access.ai.company_profile_repo import CompanyProfileRepository
-from data_access.ai.chatbot_repo import ChatbotRepository
-from data_access.ai.personality_repo import PersonalityRepository
-from data_access.ai.template_repo import TemplateRepository
-from data_access.Users.users import UserRepository
-from data_access.Notifications.notifications import NotificationRepository
-from data_access.ChatMessages.chatMessages import ChatMessageRepository
-from infrastructure.mongodb.mongo_client import get_mongo_db
+from backend.models import Organisation, Chatbot, Personality
+from backend.application.user_service import UserService
+from backend.application.user_profile_service import UserProfileService
+from backend.application.notification_service import NotificationService
+from backend.application.chat_history_service import ChatHistoryService
+from backend.application.ai.chatbot_service import ChatbotService
+from backend.application.ai.intent_service_embed import EmbeddingIntentService
+from backend.application.ai.template_engine import TemplateEngine
+from backend.application.ai.speech_to_text import transcribe_audio
+from backend.application.chat_service import ChatMessageService
+from backend.data_access.ai.company_profile_repo import CompanyProfileRepository
+from backend.data_access.ai.chatbot_repo import ChatbotRepository
+from backend.data_access.ai.personality_repo import PersonalityRepository
+from backend.data_access.ai.template_repo import TemplateRepository
+from backend.data_access.Users.users import UserRepository
+from backend.data_access.Notifications.notifications import NotificationRepository
+from backend.data_access.ChatMessages.chatMessages import ChatMessageRepository
+from backend.infrastructure.mongodb.mongo_client import get_mongo_db
 
 org_admin_bp = Blueprint("org_admin", __name__, url_prefix="/api/org-admin")
 

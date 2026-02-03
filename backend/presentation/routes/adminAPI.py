@@ -1,8 +1,8 @@
 from flask import Blueprint, request, jsonify
-from application.invitation_service import create_invitation, revoke_invitation
-from application.notification_service import NotificationService
-from data_access.Notifications.notifications import NotificationRepository
-from data_access.Users.users import UserRepository
+from backend.application.invitation_service import create_invitation, revoke_invitation
+from backend.application.notification_service import NotificationService
+from backend.data_access.Notifications.notifications import NotificationRepository
+from backend.data_access.Users.users import UserRepository
 
 admin_bp = Blueprint("admin", __name__)
 

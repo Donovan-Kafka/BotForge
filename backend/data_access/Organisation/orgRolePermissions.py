@@ -1,5 +1,5 @@
-from __init__ import db
-from models import OrgRolePermission, OrgPermission
+from backend import db
+from backend.models import OrgRolePermission, OrgPermission
 
 
 class OrgRolePermissionRepository:

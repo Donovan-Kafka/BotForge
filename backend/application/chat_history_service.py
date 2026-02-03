@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, Iterator
 
-from data_access.ChatMessages.chatMessages import ChatMessageRepository
+from backend.data_access.ChatMessages.chatMessages import ChatMessageRepository
 
 
 class ChatHistoryService:

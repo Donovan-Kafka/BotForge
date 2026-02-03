@@ -1,4 +1,4 @@
-from models import Chatbot
+from backend.models import Chatbot
 
 
 class ChatbotRepository:

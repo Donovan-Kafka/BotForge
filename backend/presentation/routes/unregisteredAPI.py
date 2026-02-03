@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
-from models import Organisation, Feedback, AppUser, FAQ, OrgRole
-from application.auth_service import (
+from backend.models import Organisation, Feedback, AppUser, FAQ, OrgRole
+from backend.application.auth_service import (
     register_org_admin, confirm_email, login, update_org_profile, register_patron
 )
 

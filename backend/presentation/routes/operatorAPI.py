@@ -2,26 +2,26 @@ from flask import Blueprint, request, jsonify, Response, stream_with_context
 from datetime import datetime, timedelta, timezone
 from werkzeug.security import generate_password_hash
 from sqlalchemy.exc import IntegrityError
-from application.invitation_service import (
+from backend.application.invitation_service import (
     validate_invitation_token,
     accept_invitation_and_create_operator
 )
-from application.user_profile_service import UserProfileService
-from application.notification_service import NotificationService
-from application.chat_history_service import ChatHistoryService
-from application.ai.chatbot_service import ChatbotService
-from application.ai.intent_service_embed import EmbeddingIntentService
-from application.ai.template_engine import TemplateEngine
-from application.ai.speech_to_text import transcribe_audio
-from application.chat_service import ChatMessageService
-from data_access.ai.company_profile_repo import CompanyProfileRepository
-from data_access.ai.chatbot_repo import ChatbotRepository
-from data_access.ai.personality_repo import PersonalityRepository
-from data_access.ai.template_repo import TemplateRepository
-from data_access.Users.users import UserRepository
-from data_access.Notifications.notifications import NotificationRepository
-from data_access.ChatMessages.chatMessages import ChatMessageRepository
-from infrastructure.mongodb.mongo_client import get_mongo_db
+from backend.application.user_profile_service import UserProfileService
+from backend.application.notification_service import NotificationService
+from backend.application.chat_history_service import ChatHistoryService
+from backend.application.ai.chatbot_service import ChatbotService
+from backend.application.ai.intent_service_embed import EmbeddingIntentService
+from backend.application.ai.template_engine import TemplateEngine
+from backend.application.ai.speech_to_text import transcribe_audio
+from backend.application.chat_service import ChatMessageService
+from backend.data_access.ai.company_profile_repo import CompanyProfileRepository
+from backend.data_access.ai.chatbot_repo import ChatbotRepository
+from backend.data_access.ai.personality_repo import PersonalityRepository
+from backend.data_access.ai.template_repo import TemplateRepository
+from backend.data_access.Users.users import UserRepository
+from backend.data_access.Notifications.notifications import NotificationRepository
+from backend.data_access.ChatMessages.chatMessages import ChatMessageRepository
+from backend.infrastructure.mongodb.mongo_client import get_mongo_db
 
 operator_bp = Blueprint("operator", __name__, url_prefix="/api/operator")
 

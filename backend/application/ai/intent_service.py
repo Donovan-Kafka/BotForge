@@ -1,5 +1,3 @@
-# backend/application/ai/intent_service.py
-
 import os
 from typing import Dict, Any
 

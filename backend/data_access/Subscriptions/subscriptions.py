@@ -1,5 +1,5 @@
-from __init__ import db
-from models import Subscription
+from backend import db
+from backend.models import Subscription
 
 
 class SubscriptionRepository:

@@ -1,5 +1,5 @@
-from __init__ import db
-from models import Feature, SubscriptionFeature
+from backend import db
+from backend.models import Feature, SubscriptionFeature
 
 
 class FeatureRepository:

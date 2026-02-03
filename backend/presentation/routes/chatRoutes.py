@@ -1,16 +1,16 @@
 from flask import Blueprint, request, jsonify
 from flask_cors import cross_origin
 import traceback
-from application.ai.chatbot_service import ChatbotService
-from application.ai.intent_service_embed import EmbeddingIntentService
-from application.ai.template_engine import TemplateEngine
-from application.chat_service import ChatMessageService
-from data_access.ai.company_profile_repo import CompanyProfileRepository
-from data_access.ai.chatbot_repo import ChatbotRepository
-from data_access.ai.personality_repo import PersonalityRepository
-from data_access.ai.template_repo import TemplateRepository
-from data_access.ChatMessages.chatMessages import ChatMessageRepository
-from infrastructure.mongodb.mongo_client import get_mongo_db
+from backend.application.ai.chatbot_service import ChatbotService
+from backend.application.ai.intent_service_embed import EmbeddingIntentService
+from backend.application.ai.template_engine import TemplateEngine
+from backend.application.chat_service import ChatMessageService
+from backend.data_access.ai.company_profile_repo import CompanyProfileRepository
+from backend.data_access.ai.chatbot_repo import ChatbotRepository
+from backend.data_access.ai.personality_repo import PersonalityRepository
+from backend.data_access.ai.template_repo import TemplateRepository
+from backend.data_access.ChatMessages.chatMessages import ChatMessageRepository
+from backend.infrastructure.mongodb.mongo_client import get_mongo_db
 
 
 chat_bp = Blueprint("chat", __name__)

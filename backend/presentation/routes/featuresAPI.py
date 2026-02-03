@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
-from data_access.Features.features import FeatureRepository
-from application.Features.featureServices import GetHighlightedFeatures
+from backend.data_access.Features.features import FeatureRepository
+from backend.application.Features.featureServices import GetHighlightedFeatures
 
 # BP for feature endpoints
 features_bp = Blueprint("features", __name__)

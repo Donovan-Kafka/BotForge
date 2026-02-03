@@ -1,5 +1,5 @@
-from __init__ import db
-from models import FAQ
+from backend import db
+from backend.models import FAQ
 
 class FaqRepository:
 

@@ -1,5 +1,5 @@
-from __init__ import db
-from models import Notification
+from backend import db
+from backend.models import Notification
 from datetime import datetime, timezone
 
 

@@ -1,4 +1,4 @@
-from models import Personality
+from backend.models import Personality
 
 
 class PersonalityRepository:

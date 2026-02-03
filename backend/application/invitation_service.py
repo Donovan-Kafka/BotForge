@@ -1,9 +1,8 @@
 import secrets
 import os
 from sqlalchemy.exc import IntegrityError
-from __init__ import db
-from models import Invitation, AppUser, OrgRole
-from application.notification_service import NotificationService
+from backend import db
+from backend.models import Invitation, AppUser, OrgRole
 
 STATUS_PENDING = 0
 STATUS_ACCEPTED = 1

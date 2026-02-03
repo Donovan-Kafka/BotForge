@@ -1,6 +1,5 @@
-from __init__ import db
+from backend import db
 from sqlalchemy.sql import func
-from datetime import datetime, timezone
 
 # =========================
 # Organisation (base)

@@ -1,15 +1,3 @@
-# What it does:
-
-# Takes a response template
-
-# Replaces placeholders like:
-
-# {{business_hours}}
-
-# {{location}}
-
-# Produces a final human-readable reply
-
 import re
 from typing import Dict, List, Any
 
@@ -37,16 +25,16 @@ class TemplateEngine:
         def replace_var(match):
             key = match.group(1)
 
-            # 1️⃣ Replace from company profile
+            # Replace from company profile
             if key in company and company[key] is not None:
                 return str(company[key])
 
-            # 2️⃣ Replace from extracted entities (future use)
+            # Replace from extracted entities (future use)
             for entity in entities:
                 if entity.get("entity") == key:
                     return str(entity.get("value"))
 
-            # 3️⃣ Fallback if missing
+            # Fallback if missing
             return f"<{key}>"
 
         return self.VARIABLE_PATTERN.sub(replace_var, template)

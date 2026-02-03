@@ -1,4 +1,4 @@
-from data_access.ChatMessages.chatMessages import ChatMessage, ChatMessageRepository
+from backend.data_access.ChatMessages.chatMessages import ChatMessage, ChatMessageRepository
 
 class ChatMessageService:
     """Application service for storing chat messages only."""

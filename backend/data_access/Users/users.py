@@ -1,5 +1,5 @@
-from __init__ import db
-from models import AppUser, OrgRole
+from backend import db
+from backend.models import AppUser, OrgRole
 from sqlalchemy.exc import IntegrityError
 from werkzeug.security import generate_password_hash
 

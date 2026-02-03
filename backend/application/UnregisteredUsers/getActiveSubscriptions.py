@@ -1,5 +1,4 @@
 # used for pricing section at landing page.
-
 class GetActiveSubscriptions:
     def __init__(self, subscription_repo):
         self.subscription_repo = subscription_repo

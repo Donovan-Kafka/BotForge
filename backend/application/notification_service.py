@@ -2,8 +2,8 @@ import os
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from data_access.Notifications.notifications import NotificationRepository
-from data_access.Users.users import UserRepository
+from backend.data_access.Notifications.notifications import NotificationRepository
+from backend.data_access.Users.users import UserRepository
 
 
 class NotificationService:

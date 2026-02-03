@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
-from data_access.Feedback.feedback import FeedbackRepository
-from data_access.Users.users import UserRepository
-from application.Feedback.submitFeedback import SubmitFeedbackUseCase
+from backend.data_access.Feedback.feedback import FeedbackRepository
+from backend.data_access.Users.users import UserRepository
+from backend.application.Feedback.submitFeedback import SubmitFeedbackUseCase
 
 feedback_bp = Blueprint("feedback", __name__, url_prefix="/api")
 

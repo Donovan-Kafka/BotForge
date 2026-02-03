@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
-from application.Faq.faqServices import FaqService
-from data_access.Faq.faq import FaqRepository
+from backend.application.Faq.faqServices import FaqService
+from backend.data_access.Faq.faq import FaqRepository
 
 faq_bp = Blueprint("faq", __name__)
 

@@ -1,6 +1,6 @@
 import numpy as np
 from sentence_transformers import SentenceTransformer
-from application.ai.intent_training_data import INTENT_EXAMPLES
+from backend.application.ai.intent_training_data import INTENT_EXAMPLES
 
 _model = None
 _intent_embeddings = None

@@ -1,10 +1,10 @@
 from flask import Blueprint, request, jsonify
 from sqlalchemy.exc import IntegrityError
 
-from data_access.Organisation.orgRoles import OrgRoleRepository
-from data_access.Organisation.orgRolePermissions import OrgRolePermissionRepository
-from application.Organisation.orgRoles import ManageOrgRoles
-from application.Organisation.orgRolePermissions import ManageOrgRolePermissions
+from backend.data_access.Organisation.orgRoles import OrgRoleRepository
+from backend.data_access.Organisation.orgRolePermissions import OrgRolePermissionRepository
+from backend.application.Organisation.orgRoles import ManageOrgRoles
+from backend.application.Organisation.orgRolePermissions import ManageOrgRolePermissions
 
 org_roles_bp = Blueprint("org_roles", __name__, url_prefix="/api/org-roles")
 

@@ -1,6 +1,6 @@
-from data_access.Feedback.feedback import FeedbackRepository
-from data_access.Users.users import UserRepository
-from application.notification_service import NotificationService
+from backend.data_access.Feedback.feedback import FeedbackRepository
+from backend.data_access.Users.users import UserRepository
+from backend.application.notification_service import NotificationService
 
 
 class SubmitFeedbackUseCase:

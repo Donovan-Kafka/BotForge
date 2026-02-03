@@ -1,6 +1,6 @@
-from data_access.Users.users import UserRepository
-from data_access.Organisation.organisation import OrganisationRepository
-from data_access.Subscriptions.subscriptions import SubscriptionRepository
+from backend.data_access.Users.users import UserRepository
+from backend.data_access.Organisation.organisation import OrganisationRepository
+from backend.data_access.Subscriptions.subscriptions import SubscriptionRepository
 
 class AssignSubscriptionUseCase:
     """

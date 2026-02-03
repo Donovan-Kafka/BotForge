@@ -1,14 +1,14 @@
 from flask import Blueprint, request, jsonify
-from models import Feedback, AppUser, Feature, FAQ, OrgRole, Organisation, SystemRole, OrgPermission, OrgRolePermission, Subscription, SubscriptionFeature, ChatMessage
-from __init__ import db
+from backend.models import Feedback, AppUser, Feature, FAQ, OrgRole, Organisation, SystemRole, OrgPermission, OrgRolePermission, Subscription, SubscriptionFeature, ChatMessage
+from backend import db
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func, case
 from datetime import datetime, timedelta, timezone
-from application.notification_service import NotificationService
-from data_access.Notifications.notifications import NotificationRepository
-from data_access.Users.users import UserRepository
-from application.user_profile_service import UserProfileService
-from infrastructure.mongodb.mongo_client import get_mongo_db
+from backend.application.notification_service import NotificationService
+from backend.data_access.Notifications.notifications import NotificationRepository
+from backend.data_access.Users.users import UserRepository
+from backend.application.user_profile_service import UserProfileService
+from backend.infrastructure.mongodb.mongo_client import get_mongo_db
 
 
 sysadmin_bp = Blueprint("sysadmin", __name__)

@@ -5,8 +5,8 @@ from flask import current_app
 from urllib.parse import quote
 import os
 
-from __init__ import db
-from models import (
+from backend import db
+from backend.models import (
     Organisation,
     OrganisationRestaurant,
     OrganisationEducation,
@@ -14,9 +14,9 @@ from models import (
     AppUser,
     OrgRole,
 )
-from application.notification_service import NotificationService
-from data_access.Notifications.notifications import NotificationRepository
-from data_access.Users.users import UserRepository
+from backend.application.notification_service import NotificationService
+from backend.data_access.Notifications.notifications import NotificationRepository
+from backend.data_access.Users.users import UserRepository
 
 
 def _serializer():

@@ -1,7 +1,7 @@
 from werkzeug.security import check_password_hash
-from data_access.Users.users import UserRepository
-from models import AppUser
-from application.notification_service import NotificationService
+from backend.data_access.Users.users import UserRepository
+from backend.models import AppUser
+from backend.application.notification_service import NotificationService
 
 
 class UserProfileService:

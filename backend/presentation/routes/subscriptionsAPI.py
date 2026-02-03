@@ -1,9 +1,9 @@
 from flask import Blueprint, jsonify, request
-from data_access.Subscriptions.subscriptions import SubscriptionRepository
-from data_access.Users.users import UserRepository
-from data_access.Organisation.organisation import OrganisationRepository
-from application.UnregisteredUsers.getActiveSubscriptions import GetActiveSubscriptions
-from application.UnregisteredUsers.choosePlan import AssignSubscriptionUseCase
+from backend.data_access.Subscriptions.subscriptions import SubscriptionRepository
+from backend.data_access.Users.users import UserRepository
+from backend.data_access.Organisation.organisation import OrganisationRepository
+from backend.application.UnregisteredUsers.getActiveSubscriptions import GetActiveSubscriptions
+from backend.application.UnregisteredUsers.choosePlan import AssignSubscriptionUseCase
 
 subscriptions_bp = Blueprint("subscriptions", __name__)
 
