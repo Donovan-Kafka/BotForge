@@ -213,12 +213,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onSystemAdminLog
                         </span>
                     </div>
                 </div>
-
-                <div className="flex justify-center">
-                    <button className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-8 rounded flex items-center gap-2 transition-colors">
-                        Export Report
-                    </button>
-                </div>
             </div>
         );
     };

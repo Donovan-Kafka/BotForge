@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { orgAdminService, orgRoleService } from '../../api';
-import { User, Loader2, Trash2, Save } from 'lucide-react';
+import { User, Loader2, Trash2, Save, Edit, X, Check } from 'lucide-react';
 
 interface ManageStaffProps {
     onBack: () => void;
@@ -10,8 +10,19 @@ interface ManageStaffProps {
 export const ManageStaff: React.FC<ManageStaffProps> = ({ onBack, onCreateRole }) => {
     const [users, setUsers] = useState<any[]>([]);
     const [roles, setRoles] = useState<any[]>([]);
+    const [allPermissions, setAllPermissions] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [currentUser, setCurrentUser] = useState<any>(null);
+
+    // Edit Role State
+    const [showEditRoleModal, setShowEditRoleModal] = useState(false);
+    const [editingRoleData, setEditingRoleData] = useState<{
+        id: number;
+        name: string;
+        description: string;
+        permission_ids: number[];
+    } | null>(null);
+    const [isUpdatingRole, setIsUpdatingRole] = useState(false);
 
     // Load data on mount
     useEffect(() => {
@@ -23,12 +34,14 @@ export const ManageStaff: React.FC<ManageStaffProps> = ({ onBack, onCreateRole }
 
             if (userObj.organisation_id) {
                 try {
-                    const [usersRes, rolesRes] = await Promise.all([
+                    const [usersRes, rolesRes, permsRes] = await Promise.all([
                         orgAdminService.listOrgUsers(userObj.organisation_id),
-                        orgRoleService.listRoles(userObj.organisation_id)
+                        orgRoleService.listRoles(userObj.organisation_id),
+                        orgRoleService.listPermissions()
                     ]);
                     if (Array.isArray(usersRes)) setUsers(usersRes);
                     if (Array.isArray(rolesRes)) setRoles(rolesRes);
+                    if (Array.isArray(permsRes)) setAllPermissions(permsRes);
                 } catch (e) {
                     console.error("Failed to load data", e);
                 } finally {
@@ -60,6 +73,63 @@ export const ManageStaff: React.FC<ManageStaffProps> = ({ onBack, onCreateRole }
         } catch (e) {
             console.error("Update failed", e);
             alert("Failed to update user role.");
+        }
+    };
+
+    const handleEditClick = (role: any) => {
+        setEditingRoleData({
+            id: role.id,
+            name: role.name,
+            description: role.description || '',
+            permission_ids: role.permission_ids || []
+        });
+        setShowEditRoleModal(true);
+    };
+
+    const handleUpdateRole = async () => {
+        if (!editingRoleData) return;
+        setIsUpdatingRole(true);
+        try {
+            // Update details
+            await orgRoleService.updateRole(editingRoleData.id, {
+                name: editingRoleData.name,
+                description: editingRoleData.description
+            });
+            // Update permissions
+            await orgRoleService.assignPermissions(editingRoleData.id, editingRoleData.permission_ids);
+
+            // Refresh local state
+            setRoles(roles.map(r => r.id === editingRoleData.id ? {
+                ...r,
+                name: editingRoleData.name,
+                description: editingRoleData.description,
+                permission_ids: editingRoleData.permission_ids
+            } : r));
+
+            setShowEditRoleModal(false);
+            setEditingRoleData(null);
+            alert("Role updated successfully!");
+        } catch (e) {
+            console.error(e);
+            alert("Failed to update role.");
+        } finally {
+            setIsUpdatingRole(false);
+        }
+    };
+
+    const togglePermission = (permId: number) => {
+        if (!editingRoleData) return;
+        const currentIds = editingRoleData.permission_ids;
+        if (currentIds.includes(permId)) {
+            setEditingRoleData({
+                ...editingRoleData,
+                permission_ids: currentIds.filter(id => id !== permId)
+            });
+        } else {
+            setEditingRoleData({
+                ...editingRoleData,
+                permission_ids: [...currentIds, permId]
+            });
         }
     };
 
@@ -199,6 +269,81 @@ export const ManageStaff: React.FC<ManageStaffProps> = ({ onBack, onCreateRole }
                 </div>
             )}
 
+            {/* Edit Role Modal */}
+            {showEditRoleModal && editingRoleData && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                            <h3 className="text-xl font-bold text-gray-900">Edit Role</h3>
+                            <button onClick={() => setShowEditRoleModal(false)} className="text-gray-400 hover:text-gray-600">
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-6">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">Role Name</label>
+                                <input
+                                    type="text"
+                                    value={editingRoleData.name}
+                                    onChange={(e) => setEditingRoleData({ ...editingRoleData, name: e.target.value })}
+                                    className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">Description</label>
+                                <input
+                                    type="text"
+                                    value={editingRoleData.description}
+                                    onChange={(e) => setEditingRoleData({ ...editingRoleData, description: e.target.value })}
+                                    className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-3">Permissions</label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    {allPermissions.map((perm) => {
+                                        const isSelected = editingRoleData.permission_ids.includes(perm.id);
+                                        return (
+                                            <div
+                                                key={perm.id}
+                                                onClick={() => togglePermission(perm.id)}
+                                                className={`cursor-pointer border rounded-lg p-3 flex items-start gap-3 transition-all ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}
+                                            >
+                                                <div className={`mt-0.5 w-5 h-5 rounded border flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300 bg-white'}`}>
+                                                    {isSelected && <Check size={14} className="text-white" />}
+                                                </div>
+                                                <div>
+                                                    <div className="text-sm font-bold text-gray-900">{perm.code}</div>
+                                                    <div className="text-xs text-gray-500">{perm.description}</div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                                <button
+                                    onClick={() => setShowEditRoleModal(false)}
+                                    className="px-4 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-lg"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleUpdateRole}
+                                    disabled={isUpdatingRole}
+                                    className="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700"
+                                >
+                                    {isUpdatingRole ? 'Saving...' : 'Save Changes'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="mb-6 flex justify-between items-center">
                 <button
                     onClick={onBack}
@@ -258,12 +403,22 @@ export const ManageStaff: React.FC<ManageStaffProps> = ({ onBack, onCreateRole }
                                     {role.description && <span className="text-gray-500 font-normal text-xs ml-2">- {role.description}</span>}
                                 </div>
                                 <div className="flex gap-3">
-                                    <button
-                                        onClick={() => handleDeleteRole(role.id)}
-                                        className="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-1.5 rounded text-sm font-bold transition-colors flex items-center gap-2"
-                                    >
-                                        <Trash2 size={16} /> Delete
-                                    </button>
+                                    {!role.is_default && (
+                                        <>
+                                            <button
+                                                onClick={() => handleEditClick(role)}
+                                                className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-1.5 rounded text-sm font-bold transition-colors flex items-center gap-2"
+                                            >
+                                                <Edit size={16} /> Edit
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteRole(role.id)}
+                                                className="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-1.5 rounded text-sm font-bold transition-colors flex items-center gap-2"
+                                            >
+                                                <Trash2 size={16} /> Delete
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         ))}

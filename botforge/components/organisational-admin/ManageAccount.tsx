@@ -142,22 +142,6 @@ export const ManageAccount: React.FC<ManageAccountProps> = ({ onBack }) => {
                     <p className="text-gray-500 text-base">Manage your details and personal preferences here.</p>
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <div className="relative">
-                        {/* Avatar Placeholder */}
-                        <img
-                            src="https://ui-avatars.com/api/?name=Admin&background=0D8ABC&color=fff"
-                            alt="Profile"
-                            className="w-10 h-10 rounded-full border border-gray-200 object-cover"
-                        />
-                        <div className="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-[2px] border-2 border-white">
-                            {/* Verified icon */}
-                            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="20 6 9 17 4 12"></polyline>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             {successMsg && (
@@ -172,24 +156,7 @@ export const ManageAccount: React.FC<ManageAccountProps> = ({ onBack }) => {
 
             <div className="space-y-0 mb-12">
 
-                {/* Photo Row (Static for now) */}
-                <div className="flex items-center justify-between py-6 border-b border-gray-100">
-                    <div className="w-1/3">
-                        <span className="text-sm font-bold text-black">Photo</span>
-                    </div>
-                    <div className="w-1/3 flex justify-start">
-                        <img
-                            src="https://ui-avatars.com/api/?name=Admin&background=0D8ABC&color=fff"
-                            alt="Profile"
-                            className="w-12 h-12 rounded-full object-cover"
-                        />
-                    </div>
-                    <div className="w-1/3 flex justify-end">
-                        <button disabled className="px-6 py-2 border border-gray-300 rounded-lg text-sm font-bold text-gray-400 cursor-not-allowed">
-                            Edit
-                        </button>
-                    </div>
-                </div>
+
 
                 {/* Name Row */}
                 <div className="flex items-center justify-between py-8 border-b border-gray-100">

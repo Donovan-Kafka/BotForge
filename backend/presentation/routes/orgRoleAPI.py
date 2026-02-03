@@ -32,11 +32,15 @@ def list_roles():
     service = ManageOrgRoles(OrgRoleRepository())
     roles = service.list_roles(organisation_id)
 
+    perm_repo = OrgRolePermissionRepository()
+
     return jsonify([
         {
             "id": r.org_role_id,
             "name": r.name,
-            "description": r.description
+            "description": r.description,
+            "is_default": r.is_default,
+            "permission_ids": perm_repo.get_permission_ids(r.org_role_id)
         }
         for r in roles
     ]), 200

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, Loader2, Save, X } from 'lucide-react';
+import { Loader2, Save, X } from 'lucide-react';
 import { authService } from '../../api';
 import { User } from '../../types';
 
@@ -17,14 +17,9 @@ export const ManageOrgProfile: React.FC<ManageOrgProfileProps> = ({ onBack }) =>
     // Company Profile State
     const [companyName, setCompanyName] = useState('');
     const [industry, setIndustry] = useState('Technology');
-    const [companySize, setCompanySize] = useState('11-50'); // Not connected to backend yet, keep as dummy
     const [description, setDescription] = useState('');
     const [location, setLocation] = useState('');
     const [websiteUrl, setWebsiteUrl] = useState('');
-
-    // Logo dummy
-    const [logoPreview, setLogoPreview] = useState<string | null>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         loadData();
@@ -92,16 +87,6 @@ export const ManageOrgProfile: React.FC<ManageOrgProfileProps> = ({ onBack }) =>
     };
 
 
-    const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            setLogoPreview(URL.createObjectURL(file));
-        }
-    };
-
-    const triggerFileInput = () => {
-        fileInputRef.current?.click();
-    };
 
     if (isLoading) {
         return <div className="flex justify-center p-10"><Loader2 className="animate-spin" /></div>;
@@ -202,52 +187,7 @@ export const ManageOrgProfile: React.FC<ManageOrgProfileProps> = ({ onBack }) =>
                     </div>
 
 
-                    {/* Company Size  (Mock) */}
-                    <div>
-                        <label className="block text-sm font-bold text-gray-900 mb-2">Company Size:</label>
-                        <div className="relative">
-                            <select
-                                value={companySize}
-                                onChange={(e) => setCompanySize(e.target.value)}
-                                className="w-full p-3 border border-gray-400 rounded text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-200 appearance-none bg-white"
-                            >
-                                <option>1-10</option>
-                                <option>11-50</option>
-                                <option>51-200</option>
-                                <option>200+</option>
-                            </select>
-                        </div>
-                    </div>
 
-                    {/* Company Logo (Mock upload) */}
-                    <div>
-                        <label className="block text-sm font-bold text-gray-900 mb-2">Company Logo:</label>
-                        <div
-                            className="border border-gray-400 rounded-lg p-8 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors h-48"
-                            onClick={triggerFileInput}
-                        >
-                            <input
-                                type="file"
-                                ref={fileInputRef}
-                                onChange={handleLogoUpload}
-                                className="hidden"
-                                accept="image/*"
-                            />
-
-                            {logoPreview ? (
-                                <img src={logoPreview} alt="Logo Preview" className="h-full w-auto object-contain" />
-                            ) : (
-                                <div className="flex flex-col items-center">
-                                    <div className="bg-blue-500 rounded-lg p-4 mb-4">
-                                        <Upload className="w-8 h-8 text-white" />
-                                    </div>
-                                    <button className="px-4 py-2 border border-gray-400 rounded font-bold text-sm text-gray-800 bg-white">
-                                        Upload file
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
 
 
                 </div>
