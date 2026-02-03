@@ -281,7 +281,6 @@ def update_org_profile(payload: dict) -> dict:
         "restaurant": "restaurant",
         "education": "education",
         "retail": "retail",
-        "technology": "technology",
     }
     prev_industry = industry_map.get(prev_industry_raw)
     industry = industry_map.get(raw_industry)
