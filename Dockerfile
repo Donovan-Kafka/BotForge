@@ -12,12 +12,14 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
+COPY requirements.txt .
+
 # Copy backend only
 COPY backend ./backend
 
 # Install Python dependencies
 RUN pip install --upgrade pip \
-    && pip install --no-cache-dir -r backend/requirements.txt
+    && pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 8000
 
