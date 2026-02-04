@@ -120,7 +120,7 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
   };
 
   return (
-    <div className="page-container">
+    <div className="create-company-profile-wrapper page-container">
       <main>
         <h1>Set up your Company Profile</h1>
         <form className="setup-form" onSubmit={handleSubmit}>
