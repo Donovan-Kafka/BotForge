@@ -10,10 +10,7 @@ interface CreateCompanyProfileProps {
 const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }) => {
   // Core & Common Fields
   const [companyName, setCompanyName] = useState('');
-  
-  // Default to 'restaurant' since 'technology' is removed
-  const [industry, setIndustry] = useState('restaurant'); 
-  
+  const [industry, setIndustry] = useState('restaurant'); // Default to restaurant
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
   const [city, setCity] = useState('');
@@ -42,20 +39,75 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
   const [productCategories, setProductCategories] = useState('');
   const [hasOnlineStore, setHasOnlineStore] = useState(false);
 
+  const [isLoading, setIsLoading] = useState(true); // New loading state for fetching data
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        const user = JSON.parse(storedUser);
-        if ((user.is_profile_complete || user.system_role_id === 0) && onSuccess) {
-          onSuccess();
+    const initData = async () => {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const user = JSON.parse(storedUser);
+          
+          // 1. Fetch existing profile data to pre-fill the form
+          if (user.organisation_id) {
+            const res = await authService.getOrgProfile(user.organisation_id);
+            if (res.ok && res.organisation) {
+              const org = res.organisation;
+              
+              // Populate Core Fields
+              setCompanyName(org.name || '');
+              setIndustry(org.industry ? org.industry.toLowerCase() : 'restaurant');
+              setDescription(org.description || '');
+              setLocation(org.location || '');
+              setCity(org.city || '');
+              setCountry(org.country || '');
+              setWebsiteUrl(org.website_url || '');
+              setContactEmail(org.contact_email || '');
+              setContactPhone(org.contact_phone || '');
+              setBusinessHours(org.business_hours || '');
+
+              // Populate Restaurant Fields
+              if (org.restaurant) {
+                setCuisineType(org.restaurant.cuisine_type || '');
+                setRestaurantStyle(org.restaurant.restaurant_style || '');
+                setDiningOptions(org.restaurant.dining_options || '');
+                setSupportsReservations(org.restaurant.supports_reservations || false);
+                setReservationLink(org.restaurant.reservation_link || '');
+                setPriceRange(org.restaurant.price_range || '$');
+                setSeatingCapacity(org.restaurant.seating_capacity || '');
+                setSpecialties(org.restaurant.specialties || '');
+              }
+
+              // Populate Retail Fields
+              if (org.retail) {
+                setProductCategories(org.retail.product_categories || '');
+                setHasOnlineStore(org.retail.has_online_store || false);
+              }
+
+              // Populate Education Fields
+              if (org.education) {
+                setInstitutionType(org.education.institution_type || '');
+                setTargetAudience(org.education.target_audience || '');
+                setCourseTypes(org.education.course_types || '');
+              }
+            }
+          }
+
+          // 2. Check if profile is already complete to skip (optional, depends on your flow)
+          if ((user.is_profile_complete || user.system_role_id === 0) && onSuccess) {
+             // Uncomment the line below if you want to auto-redirect completed users
+             // onSuccess(); 
+          }
+
+        } catch (e) {
+          console.error("Error parsing user data", e);
         }
-      } catch (e) {
-        console.error("Error parsing user data", e);
       }
-    }
+      setIsLoading(false);
+    };
+
+    initData();
   }, [onSuccess]);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -118,8 +170,15 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="animate-spin h-8 w-8 text-gray-500" />
+      </div>
+    );
+  }
+
   return (
-    // Kept the CSS wrapper class fix
     <div className="create-company-profile-wrapper page-container">
       <main>
         <h1>Set up your Company Profile</h1>
@@ -155,8 +214,9 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
             </div>
           </div>
 
+          {/* Dynamic Sections with simple fade-in effect class */}
           {industry === 'restaurant' && (
-            <div className="industry-section">
+            <div className="industry-section animate-in fade-in slide-in-from-top-2 duration-300">
               <h3>Restaurant Details</h3>
               <div className="form-group">
                 <label>Cuisine Type:</label>
@@ -184,7 +244,7 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
           )}
 
           {industry === 'retail' && (
-            <div className="industry-section">
+            <div className="industry-section animate-in fade-in slide-in-from-top-2 duration-300">
               <h3>Retail Details</h3>
               <div className="form-group">
                 <label>Product Categories:</label>
@@ -200,7 +260,7 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
           )}
           
           {industry === 'education' && (
-            <div className="industry-section">
+            <div className="industry-section animate-in fade-in slide-in-from-top-2 duration-300">
               <h3>Education Details</h3>
               <div className="form-group">
                 <label>Institution Type:</label>
@@ -224,5 +284,7 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
     </div>
   );
 };
+
+export default CreateCompanyProfile;
 
 export default CreateCompanyProfile;
