@@ -16,6 +16,7 @@ class NotificationRepository:
         return (
             Notification.query
             .filter(Notification.user_id == user_id)
+            .filter(Notification.is_read == False)
             .order_by(Notification.creation_date.desc())
             .all()
         )
