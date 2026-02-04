@@ -10,7 +10,10 @@ interface CreateCompanyProfileProps {
 const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }) => {
   // Core & Common Fields
   const [companyName, setCompanyName] = useState('');
-  const [industry, setIndustry] = useState('retail'); // Match backend lowercase mapping
+  
+  // CHANGED: Default to 'restaurant' since 'technology' is removed
+  const [industry, setIndustry] = useState('restaurant'); 
+  
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
   const [city, setCity] = useState('');
@@ -46,7 +49,6 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
     if (storedUser) {
       try {
         const user = JSON.parse(storedUser);
-        // Skip if profile is complete or user is a System Admin (ID 0)
         if ((user.is_profile_complete || user.system_role_id === 0) && onSuccess) {
           onSuccess();
         }
@@ -68,11 +70,10 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
       }
       const user = JSON.parse(storedUser);
 
-      // Construct payload to match backend auth_service.update_org_profile
       const payload = {
         organisation_id: user.organisation_id,
-        name: companyName, // Backend accepts "name" or "company_name"
-        industry: industry, // Value is already lowercase (e.g., 'restaurant', 'retail')
+        name: companyName,
+        industry: industry,
         description,
         location,
         city,
@@ -81,7 +82,6 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
         contact_email: contactEmail,
         contact_phone: contactPhone,
         business_hours: businessHours,
-        // Industry Specific Subtypes
         ...(industry === 'restaurant' && {
           cuisine_type: cuisineType,
           restaurant_style: restaurantStyle,
@@ -89,7 +89,7 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
           supports_reservations: supportsReservations,
           reservation_link: reservationLink,
           price_range: priceRange,
-          seating_capacity: parseInt(seatingCapacity) || 0, // Backend expects integer
+          seating_capacity: parseInt(seatingCapacity) || 0,
           specialties
         }),
         ...(industry === 'education' && {
@@ -105,7 +105,6 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
 
       const res = await authService.updateOrgProfile(payload);
       if (res.ok && onSuccess) {
-        // Update local storage to reflect profile completion for current session
         const updatedUser = { ...user, is_profile_complete: true };
         localStorage.setItem('user', JSON.stringify(updatedUser));
         onSuccess();
@@ -120,6 +119,7 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
   };
 
   return (
+    // CHANGED: Added 'create-company-profile-wrapper' class here to match CSS
     <div className="create-company-profile-wrapper page-container">
       <main>
         <h1>Set up your Company Profile</h1>
@@ -132,7 +132,7 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
           <div className="form-group">
             <label>Industry:</label>
             <select value={industry} onChange={(e) => setIndustry(e.target.value)}>
-              
+              {/* CHANGED: Removed Technology option */}
               <option value="restaurant">F&B (Restaurant)</option>
               <option value="retail">Retail</option>
               <option value="education">Education</option>
@@ -155,7 +155,6 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
             </div>
           </div>
 
-          {/* Industry Specific Section */}
           {industry === 'restaurant' && (
             <div className="industry-section">
               <h3>Restaurant Details</h3>
@@ -196,6 +195,20 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
                   <input type="checkbox" checked={hasOnlineStore} onChange={(e) => setHasOnlineStore(e.target.checked)} />
                   Has Online Store
                 </label>
+              </div>
+            </div>
+          )}
+          
+          {industry === 'education' && (
+            <div className="industry-section">
+              <h3>Education Details</h3>
+              <div className="form-group">
+                <label>Institution Type:</label>
+                <input type="text" value={institutionType} onChange={(e) => setInstitutionType(e.target.value)} placeholder="e.g. University, High School" />
+              </div>
+              <div className="form-group">
+                 <label>Target Audience:</label>
+                 <input type="text" value={targetAudience} onChange={(e) => setTargetAudience(e.target.value)} />
               </div>
             </div>
           )}
