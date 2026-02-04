@@ -405,11 +405,13 @@ export const orgRoleService = {
     },
 
     async assignPermissions(roleId: number, permissionIds: number[]) {
-        return api.put<any>(`/api/org-roles/${roleId}/permissions`, { permission_ids: permissionIds });
+        return api.put<any>(`/api/org-role-permissions/${roleId}/permissions`, {
+            permission_ids: permissionIds
+        });
     },
 
     async listPermissions() {
-        return api.get<any>('/api/org-roles/permissions');
+        return api.get('/api/org-role-permissions/permissions');
     }
 };
 

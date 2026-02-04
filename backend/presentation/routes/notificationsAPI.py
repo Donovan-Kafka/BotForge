@@ -13,6 +13,7 @@ service = NotificationService(notification_repo, user_repo)
 @notifications_bp.get("/")
 def list_notifications():
     user_id = request.args.get("user_id", type=int)
+
     if not user_id:
         return {"error": "user_id is required"}, 400
 
@@ -25,12 +26,12 @@ def list_notifications():
                 "message_id": n.message_id,
                 "title": n.title,
                 "content": n.content,
-                "creation_date": n.creation_date
+                "creation_date": n.creation_date,
+                "is_read": n.is_read   # ⭐ ADD THIS
             }
             for n in notifications
         ]
     }), 200
-
 
 @notifications_bp.put("/<int:message_id>/dismiss")
 def dismiss_notification(message_id: int):

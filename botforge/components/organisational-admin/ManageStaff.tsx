@@ -54,20 +54,36 @@ export const ManageStaff: React.FC<ManageStaffProps> = ({ onBack, onCreateRole }
 
     const handleDeleteRole = async (roleId: number) => {
         if (!window.confirm("Are you sure? This action cannot be undone.")) return;
+
         try {
             await orgRoleService.deleteRole(roleId);
-            setRoles(roles.filter(r => r.id !== roleId));
+
+            if (!currentUser?.organisation_id) return;
+
+            const [usersRes, rolesRes] = await Promise.all([
+                orgAdminService.listOrgUsers(currentUser.organisation_id),
+                orgRoleService.listRoles(currentUser.organisation_id)
+            ]);
+
+            if (Array.isArray(usersRes)) setUsers(usersRes);
+            if (Array.isArray(rolesRes)) setRoles(rolesRes);
+
         } catch (e) {
-            alert("Failed to delete role. It may be assigned to active users.");
+            alert("Failed to delete role.");
         }
     };
+
 
     const handleUserRoleChange = async (userId: number, newRoleId: number) => {
         try {
             const res = await orgAdminService.updateUserRole(userId, newRoleId);
             if (res.user_id) {
                 // Update local state
-                setUsers(users.map(u => u.user_id === userId ? { ...u, org_role_id: newRoleId, org_role_name: res.org_role_name } : u));
+                setUsers(users.map(u => 
+                    u.user_id === userId 
+                        ? { ...u, org_role_id: newRoleId, org_role_name: res.org_role_name } 
+                        : u
+                ));
                 alert("User role updated!");
             }
         } catch (e) {
@@ -376,7 +392,7 @@ export const ManageStaff: React.FC<ManageStaffProps> = ({ onBack, onCreateRole }
                                 <div className="flex items-center gap-2">
                                     <span className="text-sm text-gray-600">Role:</span>
                                     <select
-                                        value={u.org_role_id || ''}
+                                        value={roles.some(r => r.id === u.org_role_id) ? u.org_role_id : ''}
                                         onChange={(e) => handleUserRoleChange(u.user_id, Number(e.target.value))}
                                         className="border border-gray-300 rounded px-2 py-1 text-sm bg-gray-50"
                                     >

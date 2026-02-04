@@ -71,7 +71,7 @@ def create_app():
     from backend.presentation.routes.orgAdminAPI import org_admin_bp
     from backend.presentation.routes.notificationsAPI import notifications_bp
     from backend.presentation.routes.patronAPI import patron_bp
-
+    from backend.presentation.routes.orgRolePermissionsAPI import org_role_permissions_bp
 
     app.register_blueprint(unregistered_bp, url_prefix="/api/public")
     app.register_blueprint(faq_bp, url_prefix="/api/public")
@@ -86,6 +86,7 @@ def create_app():
     app.register_blueprint(org_admin_bp, url_prefix="/api/org-admin")
     app.register_blueprint(notifications_bp, url_prefix="/api/notifications")
     app.register_blueprint(patron_bp, url_prefix="/api/patron")
+    app.register_blueprint(org_role_permissions_bp, url_prefix="/api/org-role-permissions")
 
     @app.get("/health")
     def health():

@@ -118,6 +118,7 @@ class NotificationService:
 
     def dismiss_notification(self, user_id: int, message_id: int):
         notification = self.notification_repo.get_by_id(message_id)
+
         if not notification:
             raise ValueError("Notification not found")
 
@@ -125,6 +126,11 @@ class NotificationService:
             raise ValueError("Not allowed")
 
         self.notification_repo.dismiss_notification(notification)
+
+        return True
+
+
+
 
 
 

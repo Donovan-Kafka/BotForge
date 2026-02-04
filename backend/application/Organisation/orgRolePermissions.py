@@ -1,3 +1,6 @@
+from backend import db
+from backend.models import OrgPermission
+
 class ManageOrgRolePermissions:
 
     def __init__(self, role_repo, permission_repo):
@@ -5,10 +8,12 @@ class ManageOrgRolePermissions:
         self.permission_repo = permission_repo
 
     def assign_permissions(self, org_role_id: int, permission_ids: list[int]):
+
         if not org_role_id:
             raise ValueError("org_role_id is required")
 
         role = self.role_repo.get_by_id(org_role_id)
+
         if not role:
             raise ValueError("Role not found")
 
@@ -18,11 +23,36 @@ class ManageOrgRolePermissions:
         if not permission_ids:
             raise ValueError("At least one permission is required")
 
+        # Remove duplicates
+        permission_ids = list(set(permission_ids))
+
         if not all(isinstance(pid, int) for pid in permission_ids):
             raise ValueError("permission_ids must be integers")
 
-        self.permission_repo.delete_by_role(org_role_id)
-        self.permission_repo.add_permissions(org_role_id, permission_ids)
+        # Validate permissions exist
+        valid_permissions = (
+            db.session.query(OrgPermission.org_permission_id)
+            .filter(OrgPermission.org_permission_id.in_(permission_ids))
+            .all()
+        )
+
+        valid_ids = {p[0] for p in valid_permissions}
+
+        invalid_ids = set(permission_ids) - valid_ids
+
+        if invalid_ids:
+            raise ValueError(f"Invalid permission IDs: {list(invalid_ids)}")
+
+        # Transaction safety
+        try:
+            self.permission_repo.delete_by_role(org_role_id)
+            self.permission_repo.add_permissions(org_role_id, permission_ids)
+
+            db.session.commit()
+
+        except Exception:
+            db.session.rollback()
+            raise
 
         return {
             "org_role_id": org_role_id,
