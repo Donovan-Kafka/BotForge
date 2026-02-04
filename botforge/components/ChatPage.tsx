@@ -59,7 +59,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({ user }) => {
 
     const fetchWelcome = async () => {
       setIsLoading(true);
-      // chatService.welcome now points to /api/patron/chat/welcome
+      // chatService.welcome points to /api/patron/chat/welcome
       const res = await chatService.welcome(activeCompanyId, sessionId);
       if (res.ok) {
         setMessages([{
@@ -69,7 +69,13 @@ export const ChatPage: React.FC<ChatPageProps> = ({ user }) => {
           ts: Date.now()
         }]);
         if (res.quick_replies) setQuickReplies(res.quick_replies);
-        if (res.chatbot?.name) setChatTitle(res.chatbot.name);
+        if (res.chatbot && res.chatbot.name) {
+          setChatTitle(res.chatbot.name);
+        } else if (res.chatbot_name) {
+          setChatTitle(res.chatbot_name);
+        } else {
+          setChatTitle('BotForge Assistant');
+        }
       }
       setIsLoading(false);
     };
