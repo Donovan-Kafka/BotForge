@@ -1,7 +1,7 @@
 import React, { useState, FormEvent, useEffect } from 'react';
 import './CreateCompanyProfile.css';
 import { authService } from '../../../api';
-import { Loader2, Upload } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 interface CreateCompanyProfileProps {
   onSuccess?: () => void;
@@ -22,9 +22,6 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
   const [contactEmail, setContactEmail] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [businessHours, setBusinessHours] = useState('');
-
-  // Image Upload State
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   // Industry-specific fields
   const [cuisineType, setCuisineType] = useState('');
@@ -60,14 +57,6 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
       }
     }
   }, [onSuccess]);
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setLogoPreview(URL.createObjectURL(file));
-      // Note: Backend logic to save this file is currently missing in auth_service.py
-    }
-  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -130,44 +119,12 @@ const CreateCompanyProfile: React.FC<CreateCompanyProfileProps> = ({ onSuccess }
   };
 
   return (
+    // Kept the CSS wrapper class fix
     <div className="create-company-profile-wrapper page-container">
       <main>
         <h1>Set up your Company Profile</h1>
         <form className="setup-form" onSubmit={handleSubmit}>
           
-          {/* --- New Photo Selection Part --- */}
-          <div className="form-group">
-            <label>Company Logo</label>
-            <div className="upload-container">
-              {logoPreview ? (
-                <div className="preview-box">
-                  <img src={logoPreview} alt="Logo Preview" className="preview-image" />
-                </div>
-              ) : (
-                <div className="upload-icon">
-                  <Upload />
-                </div>
-              )}
-              
-              <input 
-                type="file" 
-                id="logo-upload" 
-                hidden 
-                accept="image/*"
-                onChange={handleImageChange}
-              />
-              
-              <button 
-                type="button" 
-                className="upload-btn"
-                onClick={() => document.getElementById('logo-upload')?.click()}
-              >
-                {logoPreview ? 'Change Logo' : 'Upload Logo'}
-              </button>
-            </div>
-          </div>
-          {/* -------------------------------- */}
-
           <div className="form-group">
             <label>Company Name:</label>
             <input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)} required />
