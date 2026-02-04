@@ -42,7 +42,11 @@ def create_app():
                 ]
             }
         },
-        allow_headers=["Content-Type", "Authorization"],
+        allow_headers=[
+            "Content-Type",
+            "Authorization",
+            "X-User-Id"   # ← THIS IS THE FIX
+        ],
         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         supports_credentials=False,
     )
