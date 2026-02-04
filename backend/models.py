@@ -2,9 +2,7 @@ from backend import db
 from sqlalchemy.sql import func
 from datetime import datetime
 
-# =========================
 # Organisation (base)
-# =========================
 
 class Organisation(db.Model):
     __tablename__ = "organisation"
