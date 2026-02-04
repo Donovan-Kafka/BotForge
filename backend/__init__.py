@@ -32,31 +32,20 @@ def create_app():
     }
 
     db.init_app(app)
-    
     CORS(
         app,
         resources={
-            r"/api/public/*": {"origins": "*"},
-            r"/api/features/*": {"origins": ["http://localhost:3000", "https://botforge-1.onrender.com"]},
-            r"/api/subscriptions/*": {"origins": ["http://localhost:3000", "https://botforge-1.onrender.com"]},
+            r"/api/*": {
+                "origins": [
+                    "https://botforge-1.onrender.com",
+                    "http://localhost:3000"
+                ]
+            }
         },
+        allow_headers=["Content-Type", "Authorization"],
+        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         supports_credentials=False,
     )
-
-    # allow CORS for authenticated routes
-    CORS(
-    app,
-    resources={
-        r"/api/*": {
-            "origins": [
-                "https://botforge-1.onrender.com",
-                "http://localhost:3000"
-            ]
-        }
-    },
-    supports_credentials=False,
-)
-
 
     from backend.presentation.routes.unregisteredAPI import unregistered_bp
     from backend.presentation.routes.faqAPI import faq_bp
