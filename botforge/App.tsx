@@ -179,7 +179,14 @@ function AppContent({ user, setUser, handleLoginSuccess }: { user: User | null, 
                     }}
                   />
                 ) : (
-                  <Navigate to="/dashboard" replace />
+                  <Navigate
+                    to={
+                      !user.subscription_id || user.subscription_id <= 0
+                        ? "/dashboard?tab=subscription"
+                        : "/dashboard"
+                    }
+                    replace
+                  />
                 ))
               : <Navigate to="/login" replace />
           }
