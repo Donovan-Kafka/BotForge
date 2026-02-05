@@ -18,28 +18,34 @@ RUN pip install --upgrade pip \
     && find /install -name "tests" -type d -exec rm -rf {} + \
     && find /install -name "__pycache__" -type d -exec rm -rf {} +
 
-
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    TRANSFORMERS_OFFLINE=1 \
+    HF_HOME=/app/.cache/huggingface
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
+    unzip \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 COPY --from=builder /install /usr/local
+
 COPY backend ./backend
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends unzip curl && \
-    rm -rf /var/lib/apt/lists/* && \
-    curl -L -o /tmp/vosk.zip https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip && \
-    unzip /tmp/vosk.zip -d /app && \
-    rm /tmp/vosk.zip
+
+RUN curl -L -o /tmp/vosk.zip https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip \
+    && unzip /tmp/vosk.zip -d /app \
+    && rm /tmp/vosk.zip
+
+
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')"
+
 
 RUN adduser --disabled-password --gecos '' appuser \
     && chown -R appuser /app
