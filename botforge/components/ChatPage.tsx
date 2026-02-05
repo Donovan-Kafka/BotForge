@@ -25,8 +25,11 @@ export const ChatPage: React.FC<ChatPageProps> = ({ user }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [quickReplies, setQuickReplies] = useState<string[]>([]);
   const [chatTitle, setChatTitle] = useState('BotForge Assistant');
+  const [isRecording, setIsRecording] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
 
   const sessionId = useMemo(() => {
     const key = 'chat_page_session_id';
@@ -123,6 +126,129 @@ export const ChatPage: React.FC<ChatPageProps> = ({ user }) => {
       }]);
     }
     setIsLoading(false);
+  };
+
+  const sendVoice = async (audioBlob: Blob) => {
+    if (!activeCompanyId || isLoading) return;
+
+    setIsLoading(true);
+
+    const res = await chatService.chatVoice({
+      organisation_id: activeCompanyId,
+      audio: audioBlob,
+      session_id: sessionId,
+    });
+
+    if (res.ok) {
+      const transcript = res.transcript || '';
+      if (transcript) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `user-${Date.now()}`,
+            role: 'user',
+            text: transcript,
+            ts: Date.now(),
+          },
+        ]);
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `bot-${Date.now()}`,
+          role: 'bot',
+          text: res.reply || 'I processed your request.',
+          ts: Date.now(),
+        },
+      ]);
+      setQuickReplies(res.quick_replies || []);
+    } else {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `bot-${Date.now()}`,
+          role: 'bot',
+          text: res.error || 'Voice message failed.',
+          ts: Date.now(),
+        },
+      ]);
+    }
+
+    setIsLoading(false);
+  };
+
+  const startRecording = async () => {
+    if (isRecording || isLoading || !isPatron) return;
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `bot-${Date.now()}`,
+          role: 'bot',
+          text: 'Microphone not supported in this browser.',
+          ts: Date.now(),
+        },
+      ]);
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const preferred = 'audio/webm;codecs=opus';
+      const mimeType = MediaRecorder.isTypeSupported(preferred) ? preferred : 'audio/webm';
+      const recorder = new MediaRecorder(stream, { mimeType });
+      chunksRef.current = [];
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        setIsRecording(false);
+        const blob = new Blob(chunksRef.current, { type: recorder.mimeType });
+        chunksRef.current = [];
+        if (blob.size > 0) {
+          await sendVoice(blob);
+        } else {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `bot-${Date.now()}`,
+              role: 'bot',
+              text: 'No audio captured.',
+              ts: Date.now(),
+            },
+          ]);
+        }
+      };
+
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `bot-${Date.now()}`,
+          role: 'bot',
+          text: 'Microphone access denied.',
+          ts: Date.now(),
+        },
+      ]);
+    }
+  };
+
+  const stopRecording = () => {
+    if (!mediaRecorderRef.current) return;
+    if (mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
+    setIsRecording(false);
   };
 
   if (!activeCompanyId) {
@@ -230,8 +356,12 @@ export const ChatPage: React.FC<ChatPageProps> = ({ user }) => {
             {isPatron && (
               <button
                 title="Voice Chat"
-                className="p-4 bg-gray-100 text-gray-600 rounded-2xl hover:bg-gray-200 transition-colors"
-                onClick={() => alert("Voice recording logic would go here, calling chatService.chatVoice")}
+                className={`p-4 rounded-2xl transition-colors ${
+                  isRecording
+                    ? 'bg-red-600 text-white hover:bg-red-700'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+                onClick={() => (isRecording ? stopRecording() : startRecording())}
               >
                 <Mic size={20} />
               </button>
