@@ -34,11 +34,12 @@ WORKDIR /app
 
 COPY --from=builder /install /usr/local
 COPY backend ./backend
-RUN apt-get update && apt-get install -y unzip curl && \
-    curl -L https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip -o model.zip && \
-    unzip model.zip && \
-    mv vosk-model-small-en-us-0.15 /app/vosk-model-small-en-us-0.15 && \
-    rm model.zip
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends unzip curl && \
+    rm -rf /var/lib/apt/lists/* && \
+    curl -L -o /tmp/vosk.zip https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip && \
+    unzip /tmp/vosk.zip -d /app && \
+    rm /tmp/vosk.zip
 
 RUN adduser --disabled-password --gecos '' appuser \
     && chown -R appuser /app
