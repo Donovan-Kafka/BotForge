@@ -34,7 +34,11 @@ WORKDIR /app
 
 COPY --from=builder /install /usr/local
 COPY backend ./backend
-COPY vosk-model-small-en-us-0.15 ./vosk-model-small-en-us-0.15
+RUN apt-get update && apt-get install -y unzip curl && \
+    curl -L https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip -o model.zip && \
+    unzip model.zip && \
+    mv vosk-model-small-en-us-0.15 /app/vosk-model-small-en-us-0.15 && \
+    rm model.zip
 
 RUN adduser --disabled-password --gecos '' appuser \
     && chown -R appuser /app
