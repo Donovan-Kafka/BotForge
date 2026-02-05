@@ -34,6 +34,7 @@ WORKDIR /app
 
 COPY --from=builder /install /usr/local
 COPY backend ./backend
+COPY vosk-model-small-en-us-0.15 ./vosk-model-small-en-us-0.15
 
 RUN adduser --disabled-password --gecos '' appuser \
     && chown -R appuser /app
