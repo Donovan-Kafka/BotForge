@@ -25,10 +25,10 @@ INSERT INTO system_role (system_role_id, name, description) VALUES
 (1, 'APP_USER', 'Application user belonging to an organisation');
 
 
-INSERT INTO subscription (name, price, status, description) VALUES
-('Standard', 10.00, 0, '300 conversations/month. Best for small teams or startups. Covers essential chatbot features.'),
-('Pro', 25.00, 0, '1500 conversations/month. Ideal for growing businesses. Includes enhanced analytics.'),
-('Deluxe', 50.00, 0, '5000 conversations/month. Designed for large organizations. Full access to premium & enterprise features.');
+INSERT INTO subscription (name, price, staff_user_limit, status, description) VALUES
+('Standard', 10.00, 3, 0, 'Best for small teams or startups. Covers essential chatbot features.'),
+('Pro', 25.00, 10, 0, 'Ideal for growing businesses. Includes enhanced analytics.'),
+('Deluxe', 50.00, 25, 0, 'Designed for large organizations. Full access to premium and enterprise features.');
 
 
 INSERT INTO feature (name, description) VALUES
