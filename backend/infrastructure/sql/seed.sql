@@ -298,14 +298,11 @@ INSERT INTO chatbot_quick_reply (organisation_id, industry, intent, language, te
 (NULL, 'default', 'any', 'en', 'Location', 2),
 (NULL, 'default', 'any', 'en', 'Pricing', 3),
 (NULL, 'default', 'any', 'en', 'Contact support', 4),
-(NULL, 'default', 'any', 'en', 'Make a booking', 5),
 (NULL, 'default', 'any', 'fr', 'Heures d''ouverture', 1),
 (NULL, 'default', 'any', 'fr', 'Localisation', 2),
 (NULL, 'default', 'any', 'fr', 'Tarifs', 3),
 (NULL, 'default', 'any', 'fr', 'Contacter le support', 4),
-(NULL, 'default', 'any', 'fr', 'Faire une réservation', 5),
 (NULL, 'default', 'any', 'zh', '营业时间', 1),
 (NULL, 'default', 'any', 'zh', '地址', 2),
 (NULL, 'default', 'any', 'zh', '价格', 3),
-(NULL, 'default', 'any', 'zh', '联系客服', 4),
-(NULL, 'default', 'any', 'zh', '预约', 5);
+(NULL, 'default', 'any', 'zh', '联系客服', 4);

@@ -222,7 +222,6 @@ class ChatbotService:
                 "Location",
                 "Pricing",
                 "Contact support",
-                "Make a booking",
             ]
 
         return self.quick_reply_repository.get_quick_replies(
