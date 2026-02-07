@@ -51,8 +51,11 @@ class ChatbotService:
         industry = (company or {}).get("industry", "default")
 
         detected_language, lang_conf = self._detect_language(message)
-        reply_language = "en"
 
+        # Use detected language if confidence is high
+        reply_language = detected_language if lang_conf >= 0.4 else "en"
+
+        # Try detected language template
         template = self.template_repository.get_template(
             company_id=company_id,
             industry=industry,
@@ -60,12 +63,23 @@ class ChatbotService:
             language=reply_language,
         )
 
+        # Fallback to English if missing
+        if not template:
+            reply_language = "en"
+            template = self.template_repository.get_template(
+                company_id=company_id,
+                industry=industry,
+                intent=intent,
+                language=reply_language,
+            )
+
         reply = self.template_engine.render(
             template=template,
             company=company or {},
             entities=entities,
         )
 
+        # Welcome override
         if chatbot and intent in ("greet", "greeting") and chatbot.welcome_message:
             reply = self.template_engine.render(
                 template=chatbot.welcome_message,
@@ -74,14 +88,14 @@ class ChatbotService:
             )
 
         if personality:
-            reply = self._apply_personality(reply, personality.name)
+            reply = self._apply_personality(reply, personality.name, reply_language)
 
         if chatbot and chatbot.allow_emojis is False:
             reply = self._strip_emojis(reply)
         elif chatbot and chatbot.allow_emojis is True:
             reply = self._ensure_emoji(reply)
 
-        quick_replies = self._quick_replies_for(company_id, industry, intent, "en")
+        quick_replies = self._quick_replies_for(company_id, industry, intent, reply_language)
 
         # Persist USER message
         self._save_chat_message(
@@ -93,6 +107,7 @@ class ChatbotService:
             message=message,
             intent=intent,
         )
+
         # Persist BOT reply
         self._save_chat_message(
             organisation_id=company_id,
@@ -137,35 +152,32 @@ class ChatbotService:
 
         industry = (company or {}).get("industry", "default")
 
+        # Welcome is ALWAYS English
         language = "en"
-        if chatbot and chatbot.welcome_message:
-            reply = self.template_engine.render(
-                template=chatbot.welcome_message,
-                company=company or {},
-                entities=[],
-            )
-        else:
-            template = self.template_repository.get_template(
-                company_id=company_id,
-                industry=industry,
-                intent="greet",
-                language=language,
-            )
-            reply = self.template_engine.render(
-                template=template,
-                company=company or {},
-                entities=[],
-            )
 
+        template = self.template_repository.get_template(
+            company_id=company_id,
+            industry=industry,
+            intent="greet",
+            language=language,
+        )
+
+        reply = self.template_engine.render(
+            template=template,
+            company=company or {},
+            entities=[],
+        )
+
+        # Apply personality using English language
         if personality:
-            reply = self._apply_personality(reply, personality.name)
+            reply = self._apply_personality(reply, personality.name, language)
 
+        # Emoji toggle
         if chatbot and chatbot.allow_emojis is False:
             reply = self._strip_emojis(reply)
         elif chatbot and chatbot.allow_emojis is True:
             reply = self._ensure_emoji(reply)
-
-        # Persist welcome message
+            
         if chatbot and session_id:
             self._save_chat_message(
                 organisation_id=company_id,
@@ -183,7 +195,12 @@ class ChatbotService:
             "confidence": 1.0,
             "entities": [],
             "reply": reply,
-            "quick_replies": self._quick_replies_for(company_id, industry, "greet", "en"),
+            "quick_replies": self._quick_replies_for(
+                company_id,
+                industry,
+                "greet",
+                language,  # English quick replies for welcome
+            ),
             "language": language,
             "language_confidence": 1.0,
         }
@@ -244,15 +261,36 @@ class ChatbotService:
             return f"{text} 🙂"
         return text
 
-    def _apply_personality(self, text: str, personality_name: str) -> str:
+    def _apply_personality(self, text: str, personality_name: str, language: str) -> str:
         name = (personality_name or "").lower()
+        language = (language or "en").lower()
 
+        personality_map = {
+            "friendly": {
+                "en": ("Hey there! 😊 ", " If you need a hand, just shout!"),
+                "zh": ("嗨！😊 ", " 如果需要帮忙，请告诉我！"),
+                "fr": ("Salut ! 😊 ", " Si vous avez besoin d’aide, dites-le moi !"),
+            },
+            "professional": {
+                "en": ("Certainly. ", " Please let me know if you need further assistance."),
+                "zh": ("好的。", " 如需进一步协助，请告诉我。"),
+                "fr": ("Bien sûr. ", " N’hésitez pas à me dire si vous avez besoin d’aide supplémentaire."),
+            }
+        }
+
+        style = None
         if "friendly" in name or "casual" in name:
-            return f"Hey there! 😊 {text} If you need a hand, just shout!"
-        if "professional" in name or "formal" in name:
-            return f"Certainly. {text} Please let me know if you need further assistance."
+            style = "friendly"
+        elif "professional" in name or "formal" in name:
+            style = "professional"
 
-        return text
+        if not style:
+            return text
+
+        prefix, suffix = personality_map.get(style, {}).get(language, personality_map[style]["en"])
+
+        return f"{prefix}{text}{suffix}"
+
 
     def _detect_language(self, text: str) -> tuple[str, float]:
         if not text:
@@ -260,19 +298,18 @@ class ChatbotService:
 
         lower = text.lower()
 
-        # Chinese (CJK)
         if re.search(r"[\u4e00-\u9fff]", text):
             return "zh", 0.99
 
-        # French accents and common words
         if re.search(r"[àâçéèêëîïôûùüÿœæ]", lower):
             return "fr", 0.85
 
         french_words = {
             "bonjour", "salut", "merci", "s'il", "vous", "aidez", "aide",
             "adresse", "prix", "tarif", "réservation", "reserver", "réserver",
-            "heures", "ouverture", "fermeture", "où", "où", "ici", "aujourd'hui",
+            "heures", "ouverture", "fermeture",
         }
+
         tokens = re.findall(r"[a-zA-ZÀ-ÿ']+", lower)
         if tokens:
             hits = sum(1 for t in tokens if t in french_words)

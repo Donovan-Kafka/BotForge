@@ -14,32 +14,34 @@ conn = None
 cur = None
 
 try:
-    # Connect to the database
+    # ---- Connect to database ----
     conn = psycopg2.connect(
         os.environ["DATABASE_URL"],
-        sslmode="require"
+        sslmode="require",
+        client_encoding="utf8"
     )
+    conn.set_client_encoding("UTF8")
 
-    conn.autocommit = False  # ensure transactional safety
+    conn.autocommit = False
     cur = conn.cursor()
+    cur.execute("SET client_encoding TO 'UTF8';")
 
-    # Read seed.sql
+    # ---- Read seed.sql using UTF-8 ----
     with open(SEED_PATH, "r", encoding="utf-8") as f:
         sql = f.read()
 
-    # Execute full seed script
+    # ---- Execute seed script ----
     cur.execute(sql)
 
-    # Commit if everything succeeds
     conn.commit()
     print("seed.sql executed successfully")
 
-    # Verify row counts (actual data tables only)
+    # ---- Verify row counts ----
     tables = [
-    "system_role", "subscription", "feature", "subscription_features",
-    "organisation", "org_role", "org_permission", "org_role_permission",
-    "personality", "app_user", "faq", "notification",
-    "feedback", "chatbot", "chatbot_template", "chatbot_quick_reply", "analytics"
+        "system_role", "subscription", "feature", "subscription_features",
+        "organisation", "org_role", "org_permission", "org_role_permission",
+        "personality", "app_user", "faq", "notification",
+        "feedback", "chatbot", "chatbot_template", "chatbot_quick_reply", "analytics"
     ]
 
     print("\nRow counts:")
