@@ -5,7 +5,6 @@ from email.mime.multipart import MIMEMultipart
 from backend.data_access.Notifications.notifications import NotificationRepository
 from backend.data_access.Users.users import UserRepository
 
-
 class NotificationService:
 
     def __init__(
@@ -48,8 +47,6 @@ class NotificationService:
 
             server.sendmail(self.smtp_from, [to], msg.as_string())
 
-
-    # System / application use
     # single specific user only
     def notify_user(self, user_id: int, title: str, content: str):
         if not user_id:
