@@ -107,11 +107,11 @@ export const PricingPage: React.FC<PricingPageProps> = ({ user, onSuccess }) => 
         </div>
       )}
 
-      <div className="grid md:grid-cols-3 gap-8">
+      <div className="grid md:grid-cols-3 gap-8 items-stretch">
         {plans.map((plan) => {
           const isCurrentPlan = currentSubscriptionId === plan.id;
           return (
-            <div key={plan.id} className={`border border-gray-400 p-8 rounded bg-white flex flex-col items-center ${plan.name === 'Pro' ? 'relative transform md:-translate-y-4 shadow-lg' : ''}`}>
+            <div key={plan.id} className={`h-full border border-gray-400 p-8 rounded bg-white flex flex-col items-center ${plan.name === 'Pro' ? 'relative shadow-lg' : ''}`}>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h2>
               <div className="flex items-baseline mb-8">
                 <span className="text-5xl font-light text-gray-900">${parseInt(plan.price)}</span>
@@ -126,7 +126,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({ user, onSuccess }) => 
                 disabled={isLoading || isCurrentPlan}
                 className={`w-full text-white font-bold py-3 px-4 rounded mb-8 transition-colors ${isCurrentPlan
                     ? 'bg-green-500 cursor-default shadow-inner'
-                    : `disabled:opacity-50 ${plan.name === 'Pro' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-400 hover:bg-blue-500'}`
+                    : 'disabled:opacity-50 bg-blue-600 hover:bg-blue-700'
                   }`}
               >
                 {isCurrentPlan ? 'Activated' : (user ? 'Subscribe Now' : 'Get Started')}
