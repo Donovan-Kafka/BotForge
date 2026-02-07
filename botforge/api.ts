@@ -331,7 +331,17 @@ export const orgAdminService = {
             form.append('user_id', String(data.user_id));
         }
         return api.requestForm<any>('/api/org-admin/chat-voice', 'POST', form);
-    }
+    },
+
+    // Quick Replies (clickable suggestions)
+    async getQuickReplies(organisationId: number, params: { language?: string } = {}) {
+        const query = new URLSearchParams(params as any);
+        return api.get<any>(`/api/org-admin/quick-replies?organisation_id=${organisationId}&${query.toString()}`);
+    },
+
+    async updateQuickReplies(organisationId: number, data: { texts: string[]; language?: string }) {
+        return api.put<any>(`/api/org-admin/quick-replies?organisation_id=${organisationId}`, data);
+    },
 };
 
 export const operatorService = {
@@ -443,6 +453,15 @@ export const notificationService = {
 };
 
 export const chatService = {
+    async getMessages(companyId: number, sessionId: string, limit: number = 100) {
+        const params = new URLSearchParams({
+            company_id: String(companyId),
+            session_id: sessionId,
+            limit: String(limit),
+        });
+        return api.get<any>(`/api/chat/messages?${params.toString()}`);
+    },
+
     async welcome(companyId: number, sessionId?: string) {
         const params = new URLSearchParams({ company_id: String(companyId) });
         if (sessionId) {

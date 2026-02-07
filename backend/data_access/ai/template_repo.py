@@ -40,9 +40,11 @@ class TemplateRepository:
         "greet": "Hi! Welcome to {{company_name}} 😊 How can I help you today?",
         "business_hours": "🍽️ {{company_name}} is open from {{business_hours}} at {{location}}.",
         "pricing": "Our pricing may vary depending on your order. For details, contact us at {{contact_email}}.",
+        "price_range": "Our typical price range is {{price_range}}. For more details, contact us at {{contact_email}}.",
         "menu": "Here are our specialties: {{specialties}}. We serve {{cuisine_type}} cuisine in a {{restaurant_style}} style.",
         "dining_options": "We offer {{dining_options}}. Let us know if you'd like delivery or takeaway.",
         "reservation": "Reservations are {{supports_reservations}}. Book here: {{reservation_link}}.",
+        "seating_capacity": "Our seating capacity is {{seating_capacity}} guests. For large groups, please contact {{contact_email}}.",
         "booking": "Sure! What date/time would you like to reserve, and how many pax?",
         "location": "{{company_name}} is located at {{location}}.",
         "website": "You can visit {{company_name}} online at {{website_url}}.",
@@ -55,6 +57,7 @@ class TemplateRepository:
         "greet": "Hi! Welcome to {{company_name}} 🎓 How can I assist you today?",
         "business_hours": "{{company_name}} operates during {{business_hours}}. Would you like admissions help?",
         "pricing": "Fees vary by course or program. Please email {{contact_email}} for the latest details.",
+        "price_range": "Fees vary by course or program. Please email {{contact_email}} for the latest details.",
         "courses": "We offer {{course_types}} for {{target_audience}}. Popular programs include {{key_programs}}.",
         "intake": "Upcoming intake periods: {{intake_periods}}.",
         "apply": "You can apply here: {{application_link}}. Typical response time is {{response_time}}.",
@@ -71,6 +74,7 @@ class TemplateRepository:
         "greet": "Hi! Welcome to {{company_name}} 🛍️ How can I help you today?",
         "business_hours": "{{company_name}} is open from {{business_hours}} at {{location}}.",
         "pricing": "Prices may vary by product. For promotions or inquiries, contact us at {{contact_email}}.",
+        "price_range": "Prices may vary by product. For promotions or inquiries, contact us at {{contact_email}}.",
         "products": "We carry {{product_categories}}. Let us know what you're looking for!",
         "delivery": "Delivery options: {{delivery_options}}. Online store: {{online_store_url}}.",
         "returns": "Our return policy: {{return_policy}}.",
@@ -137,33 +141,41 @@ class TemplateRepository:
         except (TypeError, ValueError):
             org_id = None
 
+        # Collect fallbacks, but prefer an explicit intent template (DB or in-code) over DB "fallback".
+        fallback_templates: list[str] = []
+
         # 1) Company override (language)
         if org_id is not None:
             row = _db_lookup(org_id, industry, language, intent)
             if row:
                 return row.template_text
             row = _db_lookup(org_id, industry, language, "fallback")
-            if row:
-                return row.template_text
+            if row and row.template_text:
+                fallback_templates.append(row.template_text)
 
         # 2) Industry default (language)
         row = _db_lookup(None, industry, language, intent)
         if row:
             return row.template_text
         row = _db_lookup(None, industry, language, "fallback")
-        if row:
-            return row.template_text
+        if row and row.template_text:
+            fallback_templates.append(row.template_text)
 
         # 3) Default industry (language)
         row = _db_lookup(None, "default", language, intent)
         if row:
             return row.template_text
         row = _db_lookup(None, "default", language, "fallback")
-        if row:
-            return row.template_text
+        if row and row.template_text:
+            fallback_templates.append(row.template_text)
 
-        # 4) English in-code fallback
+        # 4) In-code fallback for the requested intent (useful when DB doesn't have that intent yet).
         industry_templates = self.DEFAULT_TEMPLATES.get(industry, self.DEFAULT_TEMPLATES["default"])
         if intent in industry_templates:
             return industry_templates[intent]
+
+        # 5) DB fallbacks in order (org -> industry -> default), then in-code fallback.
+        if fallback_templates:
+            return fallback_templates[0]
+
         return industry_templates.get("fallback") or self.DEFAULT_TEMPLATES["default"]["fallback"]

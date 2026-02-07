@@ -48,7 +48,53 @@ class ChatbotService:
         if chatbot and chatbot.personality_id and self.personality_repository:
             personality = self.personality_repository.get_by_id(chatbot.personality_id)
 
+        # Lightweight context retention: if the current message is ambiguous, try re-parsing with the
+        # previous user message as context.
+        if (
+            (intent == "fallback" or confidence < 0.45)
+            and session_id
+            and chatbot
+            and chatbot.bot_id
+            and self.chat_message_service
+            and hasattr(self.chat_message_service, "get_session_messages")
+        ):
+            try:
+                history = self.chat_message_service.get_session_messages(
+                    organisation_id=int(company_id),
+                    chatbot_id=int(chatbot.bot_id),
+                    session_id=session_id,
+                    limit=12,
+                )
+                prev_user = None
+                for m in reversed(history or []):
+                    if getattr(m, "sender", None) == "user" and (getattr(m, "message", "") or "").strip():
+                        prev_user = (getattr(m, "message", "") or "").strip()
+                        break
+
+                if prev_user and prev_user.strip().lower() != (message or "").strip().lower():
+                    ctx_result = self.intent_service.parse(f"{prev_user}\n{message}")
+                    ctx_intent = ctx_result.get("intent", "fallback")
+                    ctx_conf = float(ctx_result.get("confidence", 0.0))
+                    if ctx_intent != "fallback" and ctx_conf >= 0.45 and ctx_conf >= (confidence + 0.05):
+                        intent = ctx_intent
+                        confidence = ctx_conf
+                        entities = ctx_result.get("entities", [])
+            except Exception:
+                # Never fail the chat call due to context logic.
+                pass
+
         industry = (company or {}).get("industry", "default")
+
+        # Intent refinement: for restaurants with a defined price range, answer pricing questions with the
+        # more specific "price_range" template so users get the configured value.
+        if industry == "restaurant" and intent == "pricing" and (company or {}).get("price_range"):
+            intent = "price_range"
+
+        # Avoid rendering templates with missing placeholders.
+        if intent == "price_range" and not (company or {}).get("price_range"):
+            intent = "pricing"
+        if intent == "seating_capacity" and not (company or {}).get("seating_capacity"):
+            intent = "contact_support"
 
         detected_language, lang_conf = self._detect_language(message)
 
@@ -79,20 +125,30 @@ class ChatbotService:
             entities=entities,
         )
 
-        # Welcome override
-        if chatbot and intent in ("greet", "greeting") and chatbot.welcome_message:
+        used_custom_welcome = False
+
+        # Welcome override (e.g. user says "hi")
+        if (
+            chatbot
+            and intent in ("greet", "greeting")
+            and isinstance(chatbot.welcome_message, str)
+            and chatbot.welcome_message.strip()
+        ):
             reply = self.template_engine.render(
                 template=chatbot.welcome_message,
                 company=company or {},
                 entities=entities,
             )
+            used_custom_welcome = True
 
-        if personality:
-            reply = self._apply_personality(reply, personality.name, reply_language)
+        # If the org provided a custom greeting, use it "as written" (no personality wrapping).
+        if personality and not used_custom_welcome:
+            reply = self._apply_personality(reply, personality.name, reply_language, intent=intent)
 
+        # If the org provided a custom greeting, do not auto-add emojis; only strip if disallowed.
         if chatbot and chatbot.allow_emojis is False:
             reply = self._strip_emojis(reply)
-        elif chatbot and chatbot.allow_emojis is True:
+        elif chatbot and chatbot.allow_emojis is True and not used_custom_welcome:
             reply = self._ensure_emoji(reply)
 
         quick_replies = self._quick_replies_for(company_id, industry, intent, reply_language)
@@ -168,14 +224,27 @@ class ChatbotService:
             entities=[],
         )
 
+        # Use the org-configured greeting (welcome_message) as the very first message in a session.
+        # If it's empty/unset, fall back to the default greeting template above.
+        used_custom_welcome = False
+        if chatbot and isinstance(chatbot.welcome_message, str) and chatbot.welcome_message.strip():
+            reply = self.template_engine.render(
+                template=chatbot.welcome_message,
+                company=company or {},
+                entities=[],
+            )
+            used_custom_welcome = True
+
         # Apply personality using English language
-        if personality:
-            reply = self._apply_personality(reply, personality.name, language)
+        # If the org provided a custom greeting, use it "as written" (no personality wrapping).
+        if personality and not used_custom_welcome:
+            reply = self._apply_personality(reply, personality.name, language, intent="greet")
 
         # Emoji toggle
+        # If the org provided a custom greeting, do not auto-add emojis; only strip if disallowed.
         if chatbot and chatbot.allow_emojis is False:
             reply = self._strip_emojis(reply)
-        elif chatbot and chatbot.allow_emojis is True:
+        elif chatbot and chatbot.allow_emojis is True and not used_custom_welcome:
             reply = self._ensure_emoji(reply)
             
         if chatbot and session_id:
@@ -261,21 +330,19 @@ class ChatbotService:
             return f"{text} 🙂"
         return text
 
-    def _apply_personality(self, text: str, personality_name: str, language: str) -> str:
+    def _apply_personality(self, text: str, personality_name: str, language: str, intent: str | None = None) -> str:
         name = (personality_name or "").lower()
         language = (language or "en").lower()
+        intent = (intent or "").lower()
 
+        # Keep "personality" from becoming a repetitive opener like "Certainly." on every reply.
         personality_map = {
             "friendly": {
-                "en": ("Hey there! 😊 ", " If you need a hand, just shout!"),
-                "zh": ("嗨！😊 ", " 如果需要帮忙，请告诉我！"),
-                "fr": ("Salut ! 😊 ", " Si vous avez besoin d’aide, dites-le moi !"),
+                "en": ("", " If you need a hand, just shout!"),
             },
             "professional": {
-                "en": ("Certainly. ", " Please let me know if you need further assistance."),
-                "zh": ("好的。", " 如需进一步协助，请告诉我。"),
-                "fr": ("Bien sûr. ", " N’hésitez pas à me dire si vous avez besoin d’aide supplémentaire."),
-            }
+                "en": ("", " Please let me know if you need further assistance."),
+            },
         }
 
         style = None
@@ -287,10 +354,12 @@ class ChatbotService:
         if not style:
             return text
 
-        prefix, suffix = personality_map.get(style, {}).get(language, personality_map[style]["en"])
+        _prefix, suffix = personality_map.get(style, {}).get(language, personality_map[style]["en"])
 
-        return f"{prefix}{text}{suffix}"
-
+        # Only add the closing line for intents where it helps.
+        if intent in {"fallback", "contact_support"} and suffix:
+            return f"{text}{suffix}"
+        return text
 
     def _detect_language(self, text: str) -> tuple[str, float]:
         if not text:

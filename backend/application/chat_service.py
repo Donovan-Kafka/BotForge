@@ -29,3 +29,17 @@ class ChatMessageService:
             embedding_id=embedding_id,
         )
         return self.repo.insert(chat_message)
+
+    def get_session_messages(
+        self,
+        organisation_id: int,
+        chatbot_id: int,
+        session_id: str,
+        limit: int | None = None,
+    ) -> list[ChatMessage]:
+        return self.repo.get_by_session(
+            organisation_id=organisation_id,
+            chatbot_id=chatbot_id,
+            session_id=session_id,
+            limit=limit,
+        )

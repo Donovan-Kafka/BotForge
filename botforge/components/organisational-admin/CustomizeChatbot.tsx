@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { GripVertical } from 'lucide-react';
 import { orgAdminService, operatorService } from '../../api';
 
 interface CustomizeChatbotProps {
@@ -6,6 +7,12 @@ interface CustomizeChatbotProps {
   organisationId?: number;
   role?: string;
 }
+
+type QuickReplyOption = {
+  intent: string;
+  text: string;
+  available: boolean;
+};
 
 export const CustomizeChatbot: React.FC<CustomizeChatbotProps> = ({ onBack, organisationId, role }) => {
   const [settings, setSettings] = useState({
@@ -17,6 +24,11 @@ export const CustomizeChatbot: React.FC<CustomizeChatbotProps> = ({ onBack, orga
     allow_emojis: false,
   });
   const [personalities, setPersonalities] = useState<any[]>([]);
+  const [quickReplyOptions, setQuickReplyOptions] = useState<QuickReplyOption[]>([]);
+  const [quickReplySelected, setQuickReplySelected] = useState<string[]>([]);
+  const [quickReplySuggested, setQuickReplySuggested] = useState<string[]>([]);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [insertIdx, setInsertIdx] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -52,6 +64,20 @@ export const CustomizeChatbot: React.FC<CustomizeChatbotProps> = ({ onBack, orga
           });
         }
       }
+
+      // Quick replies editable by org admins only
+      if (organisationId && role !== 'STAFF') {
+        const qRes = await orgAdminService.getQuickReplies(organisationId, { language: 'en' });
+        if (qRes.ok) {
+          const options = Array.isArray(qRes.options) ? (qRes.options as QuickReplyOption[]) : [];
+          const current = Array.isArray(qRes.current) ? (qRes.current as string[]) : [];
+          const suggested = Array.isArray(qRes.suggested) ? (qRes.suggested as string[]) : [];
+
+          setQuickReplyOptions(options);
+          setQuickReplySuggested(suggested);
+          setQuickReplySelected(current.length > 0 ? current : suggested);
+        }
+      }
     } catch (e) {
       console.error(e);
     }
@@ -62,6 +88,69 @@ export const CustomizeChatbot: React.FC<CustomizeChatbotProps> = ({ onBack, orga
     setSettings(prev => ({ ...prev, [field]: value }));
   };
 
+  const moveQuickReply = (idx: number, dir: -1 | 1) => {
+    setQuickReplySelected((prev) => {
+      const next = [...prev];
+      const j = idx + dir;
+      if (j < 0 || j >= next.length) return prev;
+      const tmp = next[idx];
+      next[idx] = next[j];
+      next[j] = tmp;
+      return next;
+    });
+  };
+
+  const toggleQuickReply = (text: string) => {
+    setQuickReplySelected((prev) => {
+      if (prev.includes(text)) return prev.filter((t) => t !== text);
+      return [...prev, text];
+    });
+  };
+
+  const reorderQuickReplies = (from: number, insertAt: number) => {
+    setQuickReplySelected((prev) => {
+      if (from < 0 || from >= prev.length) return prev;
+      if (insertAt < 0 || insertAt > prev.length) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      let idx = insertAt;
+      if (idx > from) idx -= 1; // account for removal shift
+      idx = Math.max(0, Math.min(idx, next.length));
+      next.splice(idx, 0, moved);
+      return next;
+    });
+  };
+
+  const QuickReplyInsertZone: React.FC<{ index: number }> = ({ index }) => {
+    const active = insertIdx === index;
+    return (
+      <div
+        onDragOver={(e) => {
+          if (dragIdx === null) return;
+          e.preventDefault();
+          if (insertIdx !== index) setInsertIdx(index);
+        }}
+        onDrop={(e) => {
+          if (dragIdx === null) return;
+          e.preventDefault();
+          reorderQuickReplies(dragIdx, index);
+          setDragIdx(null);
+          setInsertIdx(null);
+        }}
+        className={`relative transition-[height] ${active ? 'h-6' : 'h-3'}`}
+        aria-hidden="true"
+      >
+        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 px-1">
+          <div
+            className={`h-0.5 rounded-full transition-colors ${
+              active ? 'bg-blue-600' : 'bg-transparent'
+            }`}
+          />
+        </div>
+      </div>
+    );
+  };
+
   const handleSave = async () => {
     if (!organisationId) return;
     setSaving(true);
@@ -70,7 +159,7 @@ export const CustomizeChatbot: React.FC<CustomizeChatbotProps> = ({ onBack, orga
       const service = role === 'STAFF' ? operatorService : orgAdminService;
       const res = await service.updateChatbotSettings(organisationId, settings);
       if (res.ok) {
-        setMessage('Settings saved successfully!');
+        // Update local state with returned data just in case
         // Update local state with returned data just in case
         if (res.chatbot) {
           setSettings({
@@ -82,6 +171,19 @@ export const CustomizeChatbot: React.FC<CustomizeChatbotProps> = ({ onBack, orga
             allow_emojis: res.chatbot.allow_emojis || false,
           });
         }
+
+        if (role !== 'STAFF') {
+          const qRes = await orgAdminService.updateQuickReplies(organisationId, {
+            texts: quickReplySelected,
+            language: 'en',
+          });
+          if (!qRes.ok) {
+            setMessage('Error: ' + (qRes.error || 'Failed to save quick replies'));
+            return;
+          }
+        }
+
+        setMessage('Settings saved successfully!');
       } else {
         setMessage('Error: ' + res.error);
       }
@@ -172,6 +274,105 @@ export const CustomizeChatbot: React.FC<CustomizeChatbotProps> = ({ onBack, orga
 
           {/* Removed Enable Voice as it is not backend supported yet */}
         </div>
+
+        {/* Quick Replies (Org Admin Only) */}
+        {role !== 'STAFF' && (
+          <div className="pt-6 border-t border-gray-200">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-bold text-gray-900">Quick Replies</h3>
+              {quickReplySelected.length === 0 && quickReplySuggested.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setQuickReplySelected(quickReplySuggested)}
+                  className="text-xs font-bold text-blue-600 hover:text-blue-700"
+                >
+                  Use Suggested
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-gray-500 mb-4">
+              Choose which clickable suggestions users see. Only fields you have filled in your org profile are selectable.
+            </p>
+
+            {/* Selected (order) */}
+            {quickReplySelected.length > 0 && (
+              <div className="mb-4">
+                <div className="text-xs font-bold text-gray-700 mb-2">Selected (order)</div>
+                <p className="text-[11px] text-gray-500 mb-2">Drag to reorder.</p>
+                <div>
+                  <QuickReplyInsertZone index={0} />
+                  {quickReplySelected.map((t, idx) => (
+                    <div key={t}>
+                      <div
+                        draggable
+                        onDragStart={(e) => {
+                          setDragIdx(idx);
+                          setInsertIdx(idx);
+                          e.dataTransfer.effectAllowed = 'move';
+                          try {
+                            e.dataTransfer.setData('text/plain', t);
+                          } catch {
+                            // ignore
+                          }
+                        }}
+                        onDragEnd={() => {
+                          setDragIdx(null);
+                          setInsertIdx(null);
+                        }}
+                        className={`flex items-center justify-between border border-gray-200 rounded px-3 py-2 bg-white ${
+                          dragIdx === idx ? 'opacity-60' : ''
+                        }`}
+                        title="Drag to reorder"
+                      >
+                        <div className="text-sm text-gray-800 font-medium">{t}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-gray-400 cursor-grab active:cursor-grabbing select-none" aria-hidden="true">
+                            <GripVertical size={16} />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => toggleQuickReply(t)}
+                            className="text-xs font-bold px-2 py-1 border rounded text-red-600 border-red-200 hover:bg-red-50"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                      <QuickReplyInsertZone index={idx + 1} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Available options */}
+            <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+              <div className="text-xs font-bold text-gray-700 mb-2">Available</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {quickReplyOptions
+                  .filter((o) => o.available)
+                  .map((o) => {
+                    const checked = quickReplySelected.includes(o.text);
+                    return (
+                      <label key={o.intent} className="flex items-center gap-2 text-sm text-gray-800">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleQuickReply(o.text)}
+                        />
+                        {o.text}
+                      </label>
+                    );
+                  })}
+              </div>
+              {quickReplyOptions.filter((o) => o.available).length === 0 && (
+                <div className="text-xs text-gray-600">
+                  No quick replies available yet. Fill in more fields under Manage Org Profile.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="pt-6">
           <button
