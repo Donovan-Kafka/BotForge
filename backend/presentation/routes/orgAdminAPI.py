@@ -3,7 +3,7 @@ from flask import Blueprint, request, jsonify, Response, stream_with_context
 from flask_cors import cross_origin
 from datetime import datetime, timezone, timedelta
 from sqlalchemy.exc import IntegrityError
-from backend.models import Organisation, Chatbot, Personality, Subscription, AppUser, OrgRole, Invitation
+from backend.models import Organisation, Chatbot, Personality, Subscription, AppUser, OrgRole, Invitation, ChatbotQuickReply
 from backend.application.user_service import UserService
 from backend.application.user_profile_service import UserProfileService
 from backend.application.notification_service import NotificationService
@@ -183,6 +183,115 @@ def _build_staff_capacity(organisation_id: int) -> dict:
         "remaining_invites": remaining_invites,
         "message": None
     }
+
+def _truthy(v) -> bool:
+    if v is None:
+        return False
+    if isinstance(v, bool):
+        return v
+    if isinstance(v, (int, float)):
+        return True
+    if isinstance(v, str):
+        return bool(v.strip())
+    return True
+
+def _company_has_any(company: dict, fields: list[str]) -> bool:
+    for f in fields:
+        if _truthy(company.get(f)):
+            return True
+    return False
+
+def _quick_reply_options(company: dict) -> list[dict]:
+    """
+    Returns candidate quick replies based on which org profile fields are filled.
+
+    Each option is returned as:
+      { "intent": str, "text": str, "available": bool }
+    """
+    industry = (company or {}).get("industry") or "default"
+
+    # Common options (all industries)
+    options = [
+        {"intent": "business_hours", "text": "Business hours", "requires_any": ["business_hours"]},
+        {"intent": "location", "text": "Location", "requires_any": ["location", "city", "country"]},
+        {"intent": "website", "text": "Website", "requires_any": ["website_url"]},
+        {"intent": "contact_support", "text": "Contact support", "requires_any": ["contact_email", "contact_phone"]},
+        {"intent": "pricing", "text": "Pricing", "requires_any": ["contact_email"]},
+    ]
+
+    if industry == "restaurant":
+        options.extend([
+            {"intent": "menu", "text": "Menu", "requires_any": ["specialties", "cuisine_type", "restaurant_style"]},
+            {"intent": "dining_options", "text": "Dining options", "requires_any": ["dining_options"]},
+            {"intent": "reservation", "text": "Reservations", "requires_any": ["supports_reservations", "reservation_link"]},
+            {"intent": "price_range", "text": "Price range", "requires_any": ["price_range"]},
+            {"intent": "seating_capacity", "text": "Seating capacity", "requires_any": ["seating_capacity"]},
+        ])
+
+    elif industry == "retail":
+        options.extend([
+            {"intent": "products", "text": "Products", "requires_any": ["product_categories"]},
+            {"intent": "delivery", "text": "Delivery", "requires_any": ["delivery_options", "online_store_url"]},
+            {"intent": "returns", "text": "Returns", "requires_any": ["return_policy"]},
+            {"intent": "warranty", "text": "Warranty", "requires_any": ["warranty_info"]},
+            {"intent": "payment_methods", "text": "Payment methods", "requires_any": ["payment_methods"]},
+        ])
+
+    elif industry == "education":
+        options.extend([
+            {"intent": "courses", "text": "Courses", "requires_any": ["course_types", "key_programs"]},
+            {"intent": "intake", "text": "Intake", "requires_any": ["intake_periods"]},
+            {"intent": "apply", "text": "Apply", "requires_any": ["application_link"]},
+            {"intent": "delivery_mode", "text": "Delivery mode", "requires_any": ["delivery_mode"]},
+        ])
+
+    # Mark availability based on current org profile.
+    out = []
+    for o in options:
+        out.append({
+            "intent": o["intent"],
+            "text": o["text"],
+            "available": _company_has_any(company, o.get("requires_any", [])),
+        })
+
+    return out
+
+def _suggest_quick_replies(options: list[dict]) -> list[str]:
+    """
+    Pick a sensible default set (max 6) from the available options.
+    """
+    preferred_order = [
+        "business_hours",
+        "location",
+        "pricing",
+        "contact_support",
+        "website",
+        "reservation",
+        "price_range",
+        "seating_capacity",
+        "menu",
+        "dining_options",
+        "products",
+        "delivery",
+        "returns",
+        "warranty",
+        "payment_methods",
+        "courses",
+        "intake",
+        "apply",
+        "delivery_mode",
+    ]
+
+    by_intent = {o["intent"]: o for o in options}
+    chosen = []
+    for it in preferred_order:
+        o = by_intent.get(it)
+        if not o or not o.get("available"):
+            continue
+        chosen.append(o["text"])
+        if len(chosen) >= 6:
+            break
+    return chosen
 
 # ORG ADMIN: users
 
@@ -537,6 +646,133 @@ def update_chatbot_settings():
             "primary_language": chatbot.primary_language,
             "allow_emojis": chatbot.allow_emojis,
         }
+    }), 200
+
+
+# ORG ADMIN: quick replies (clickable suggestions shown to end-users)
+
+@org_admin_bp.get("/quick-replies")
+def get_org_quick_replies():
+    organisation_id = request.args.get("organisation_id", type=int)
+    if not organisation_id:
+        return {"error": "organisation_id is required"}, 400
+
+    company_repo = CompanyProfileRepository()
+    company = company_repo.get_company_profile(organisation_id)
+    if not company:
+        return {"error": "Organisation not found"}, 404
+
+    industry = (company.get("industry") or "default").strip().lower()
+    language = (request.args.get("language") or "en").strip().lower()
+    if language not in ("en", "fr", "zh"):
+        language = "en"
+
+    options = _quick_reply_options(company)
+    suggested = _suggest_quick_replies(options)
+
+    rows = (
+        ChatbotQuickReply.query
+        .filter_by(
+            organisation_id=organisation_id,
+            industry=industry,
+            language=language,
+            intent="any",
+        )
+        .order_by(ChatbotQuickReply.display_order.asc(), ChatbotQuickReply.quick_reply_id.asc())
+        .all()
+    )
+    current = [r.text for r in rows] if rows else []
+
+    return jsonify({
+        "ok": True,
+        "industry": industry,
+        "language": language,
+        "options": options,
+        "current": current,
+        "suggested": suggested,
+    }), 200
+
+
+@org_admin_bp.put("/quick-replies")
+def update_org_quick_replies():
+    organisation_id = request.args.get("organisation_id", type=int)
+    if not organisation_id:
+        return {"error": "organisation_id is required"}, 400
+
+    data = request.get_json() or {}
+    texts = data.get("texts")
+
+    if not isinstance(texts, list):
+        return {"error": "texts must be a list of strings"}, 400
+
+    language = (data.get("language") or "en").strip().lower()
+    if language not in ("en", "fr", "zh"):
+        language = "en"
+
+    # Basic size limits
+    cleaned: list[str] = []
+    for t in texts:
+        if not isinstance(t, str):
+            return {"error": "texts must be a list of strings"}, 400
+        s = t.strip()
+        if not s:
+            continue
+        if len(s) > 120:
+            return {"error": "each quick reply must be <= 120 characters"}, 400
+        if s not in cleaned:
+            cleaned.append(s)
+
+    if len(cleaned) > 10:
+        return {"error": "max 10 quick replies"}, 400
+
+    company_repo = CompanyProfileRepository()
+    company = company_repo.get_company_profile(organisation_id)
+    if not company:
+        return {"error": "Organisation not found"}, 404
+
+    industry = (company.get("industry") or "default").strip().lower()
+    options = _quick_reply_options(company)
+    allowed_texts = {o["text"] for o in options if o.get("available")}
+
+    for s in cleaned:
+        if s not in allowed_texts:
+            return {"error": f"Quick reply not allowed for current org profile: {s}"}, 400
+
+    # Replace org-specific quick replies for this industry/language.
+    (
+        ChatbotQuickReply.query
+        .filter_by(
+            organisation_id=organisation_id,
+            industry=industry,
+            language=language,
+            intent="any",
+        )
+        .delete()
+    )
+
+    for idx, s in enumerate(cleaned, start=1):
+        db.session.add(ChatbotQuickReply(
+            organisation_id=organisation_id,
+            industry=industry,
+            intent="any",
+            language=language,
+            text=s,
+            display_order=idx,
+        ))
+
+    db.session.commit()
+
+    notification_service.notify_organisation(
+        organisation_id=organisation_id,
+        title="Chatbot quick replies updated",
+        content="Chatbot quick replies were updated by your organisation admin.",
+    )
+
+    return jsonify({
+        "ok": True,
+        "industry": industry,
+        "language": language,
+        "quick_replies": cleaned,
     }), 200
 
 @org_admin_bp.route("/analytics", methods=["GET", "OPTIONS"])

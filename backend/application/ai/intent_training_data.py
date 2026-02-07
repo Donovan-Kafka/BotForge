@@ -276,6 +276,7 @@ INTENT_EXAMPLES = {
         "可以堂食吗",
     ],
     "seating_capacity": [
+        "seating capacity",
         "what is the seating capacity",
         "what's the seating capacity",
         "whats the seating capacity",
