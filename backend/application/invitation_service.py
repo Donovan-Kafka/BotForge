@@ -39,11 +39,10 @@ def _count_active_staff_users(organisation_id: int) -> int:
         .filter(
             AppUser.organisation_id == organisation_id,
             AppUser.status.is_(True),
-            OrgRole.name == "STAFF",
+            OrgRole.name != "ORG_ADMIN"
         )
         .count()
     )
-
 
 def _count_pending_staff_invitations(organisation_id: int) -> int:
     return (
