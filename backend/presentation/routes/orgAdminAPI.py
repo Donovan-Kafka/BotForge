@@ -159,7 +159,7 @@ def _build_staff_capacity(organisation_id: int) -> dict:
         .filter(
             AppUser.organisation_id == organisation_id,
             AppUser.status.is_(True),
-            OrgRole.name == "STAFF",
+            OrgRole.name != "ORG_ADMIN"
         )
         .count()
     )
