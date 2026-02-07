@@ -194,7 +194,7 @@ function AppContent({ user, setUser, handleLoginSuccess }: { user: User | null, 
 
 
         <Route path="/chatPage" element={
-            user && user.system_role_id === 2 ? <ChatPage user={user} /> : <Navigate to="/login" />
+            user && user.system_role_id === 2 ? <ChatPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />
         }/>
 
         <Route path="/patron/register" element={ <PatronRegister />}/>

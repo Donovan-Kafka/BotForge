@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Send, Bot, User as UserIcon, Loader2, Mic } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Send, Bot, User as UserIcon, Loader2, Mic, ArrowLeft, LogOut } from 'lucide-react';
 import { chatService } from '../api';
 import { User } from '../types';
 
@@ -15,11 +15,13 @@ type ChatMessage = {
 
 type ChatPageProps = {
   user: User | null;
+  onLogout: () => void;
 };
 
 const buildSessionId = () => `page-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
-export const ChatPage: React.FC<ChatPageProps> = ({ user }) => {
+export const ChatPage: React.FC<ChatPageProps> = ({ user, onLogout }) => {
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -31,22 +33,6 @@ export const ChatPage: React.FC<ChatPageProps> = ({ user }) => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
-  const sessionId = useMemo(() => {
-    const key = 'chat_page_session_id';
-    const existing = localStorage.getItem(key);
-    if (existing) return existing;
-    const next = buildSessionId();
-    localStorage.setItem(key, next);
-    return next;
-  }, []);
-
-  // Auto-scroll to bottom
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages, isLoading]);
-
   // Read company_id from query params or user
   // For Patrons (system_role_id === 2), they will typically have a company_id in the URL
   const [searchParams] = useSearchParams();
@@ -55,6 +41,33 @@ export const ChatPage: React.FC<ChatPageProps> = ({ user }) => {
 
   // Determine if we are in Patron mode to route to correct API endpoints if needed
   const isPatron = user?.system_role_id === 2;
+
+  // Use a per-company session id so switching chats doesn't mix server-side conversation state.
+  const sessionId = useMemo(() => {
+    const key = activeCompanyId ? `chat_page_session_id_${activeCompanyId}` : 'chat_page_session_id';
+    const existing = localStorage.getItem(key);
+    if (existing) return existing;
+    const next = buildSessionId();
+    localStorage.setItem(key, next);
+    return next;
+  }, [activeCompanyId]);
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, isLoading]);
+
+  // When the active chat changes, reset local UI state so messages/title don't bleed across chats.
+  useEffect(() => {
+    setMessages([]);
+    setQuickReplies([]);
+    setChatTitle('BotForge Assistant');
+    setInput('');
+    setIsLoading(false);
+    setIsRecording(false);
+  }, [activeCompanyId]);
 
   // Fetch initial welcome message
   useEffect(() => {
@@ -251,10 +264,34 @@ export const ChatPage: React.FC<ChatPageProps> = ({ user }) => {
     setIsRecording(false);
   };
 
+  const handleBackToSelectChat = () => {
+    stopRecording();
+    navigate('/selectChat');
+  };
+
   if (!activeCompanyId) {
     return (
-      <div className="flex items-center justify-center h-full text-gray-500">
-        Please join an organization or select a chat to use the chatbot.
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm max-w-md w-full">
+          <h2 className="text-lg font-bold text-gray-900 mb-2">No chat selected</h2>
+          <p className="text-gray-600 text-sm mb-4">
+            Please select a chat to start talking to a chatbot.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={handleBackToSelectChat}
+              className="flex-1 py-2 px-4 bg-blue-600 text-white rounded-md font-semibold hover:bg-blue-700 transition-colors"
+            >
+              Back to chats
+            </button>
+            <button
+              onClick={onLogout}
+              className="py-2 px-4 border border-gray-300 text-gray-700 rounded-md font-semibold hover:bg-gray-50 transition-colors"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -273,6 +310,25 @@ export const ChatPage: React.FC<ChatPageProps> = ({ user }) => {
               <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" /> Online
             </p>
           </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleBackToSelectChat}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            <ArrowLeft size={16} />
+            Change chat
+          </button>
+          <button
+            type="button"
+            onClick={onLogout}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-900 text-sm font-semibold text-white hover:bg-black transition-colors"
+          >
+            <LogOut size={16} />
+            Logout
+          </button>
         </div>
       </header>
 
