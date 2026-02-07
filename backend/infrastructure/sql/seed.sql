@@ -25,10 +25,10 @@ INSERT INTO system_role (system_role_id, name, description) VALUES
 (1, 'APP_USER', 'Application user belonging to an organisation');
 
 
-INSERT INTO subscription (name, price, status, description) VALUES
-('Standard', 10.00, 0, '300 conversations/month. Best for small teams or startups. Covers essential chatbot features.'),
-('Pro', 25.00, 0, '1500 conversations/month. Ideal for growing businesses. Includes enhanced analytics.'),
-('Deluxe', 50.00, 0, '5000 conversations/month. Designed for large organizations. Full access to premium & enterprise features.');
+INSERT INTO subscription (name, price, staff_user_limit, status, description) VALUES
+('Standard', 10.00, 3, 0, 'Best for small teams or startups. Covers essential chatbot features.'),
+('Pro', 25.00, 10, 0, 'Ideal for growing businesses. Includes enhanced analytics.'),
+('Deluxe', 50.00, 25, 0, 'Designed for large organizations. Full access to premium and enterprise features.');
 
 
 INSERT INTO feature (name, description) VALUES
@@ -298,14 +298,11 @@ INSERT INTO chatbot_quick_reply (organisation_id, industry, intent, language, te
 (NULL, 'default', 'any', 'en', 'Location', 2),
 (NULL, 'default', 'any', 'en', 'Pricing', 3),
 (NULL, 'default', 'any', 'en', 'Contact support', 4),
-(NULL, 'default', 'any', 'en', 'Make a booking', 5),
 (NULL, 'default', 'any', 'fr', 'Heures d''ouverture', 1),
 (NULL, 'default', 'any', 'fr', 'Localisation', 2),
 (NULL, 'default', 'any', 'fr', 'Tarifs', 3),
 (NULL, 'default', 'any', 'fr', 'Contacter le support', 4),
-(NULL, 'default', 'any', 'fr', 'Faire une réservation', 5),
 (NULL, 'default', 'any', 'zh', '营业时间', 1),
 (NULL, 'default', 'any', 'zh', '地址', 2),
 (NULL, 'default', 'any', 'zh', '价格', 3),
-(NULL, 'default', 'any', 'zh', '联系客服', 4),
-(NULL, 'default', 'any', 'zh', '预约', 5);
+(NULL, 'default', 'any', 'zh', '联系客服', 4);

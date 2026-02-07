@@ -10,6 +10,16 @@ export const ManageAccount: React.FC<ManageAccountProps> = ({ onBack }) => {
   const [user, setUser] = useState<any>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [staffCapacity, setStaffCapacity] = useState<{
+    subscription_name: string | null;
+    staff_limit: number | null;
+    active_staff_count: number;
+    pending_invitation_count: number;
+    remaining_invites: number;
+    message: string | null;
+  } | null>(null);
+  const [isLoadingCapacity, setIsLoadingCapacity] = useState(false);
+  const [capacityError, setCapacityError] = useState<string | null>(null);
 
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -19,12 +29,39 @@ export const ManageAccount: React.FC<ManageAccountProps> = ({ onBack }) => {
   const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
+    const loadStaffCapacity = async (organisationId: number) => {
+      setIsLoadingCapacity(true);
+      setCapacityError(null);
+      try {
+        const res = await orgAdminService.getStaffCapacity(organisationId);
+        if (res?.ok && res?.staff_capacity) {
+          setStaffCapacity(res.staff_capacity);
+          return;
+        }
+
+        // Backward compat: older backend might not have /staff-capacity yet.
+        const fallback = await orgAdminService.listOrgUsers(organisationId);
+        setStaffCapacity(fallback?.staff_capacity ?? null);
+        if (!fallback?.staff_capacity) {
+          setCapacityError((res && res.error) || (fallback && fallback.error) || 'Unable to load staff capacity');
+        }
+      } catch (e) {
+        setStaffCapacity(null);
+        setCapacityError('Unable to load staff capacity');
+      } finally {
+        setIsLoadingCapacity(false);
+      }
+    };
+
     const stored = localStorage.getItem('user');
     if (stored) {
       const u = JSON.parse(stored);
       setUser(u);
       setName(u.username || '');
       setEmail(u.email || '');
+      if (u.organisation_id) {
+        loadStaffCapacity(u.organisation_id);
+      }
     }
   }, []);
 
@@ -128,6 +165,23 @@ export const ManageAccount: React.FC<ManageAccountProps> = ({ onBack }) => {
         <h3 className="text-sm font-bold text-gray-700 mb-6">Account Information</h3>
 
         <div className="space-y-6 max-w-xl mx-auto">
+          {user?.organisation_id && (
+            <div className="border border-blue-200 bg-blue-50 rounded-lg px-4 py-3">
+              <div className="text-sm font-bold text-blue-900">Staff Seats Left</div>
+              {isLoadingCapacity ? (
+                <div className="text-sm text-blue-800 mt-1">Loading staff capacity...</div>
+              ) : staffCapacity && staffCapacity.staff_limit !== null ? (
+                <div className="text-sm text-blue-800 mt-1">
+                  <span className="font-bold">{staffCapacity?.remaining_invites ?? 0}</span> seat(s) available.
+                </div>
+              ) : (
+                <div className="text-sm text-blue-800 mt-1">
+                  {staffCapacity?.message || capacityError || 'Staff limit unavailable.'}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="flex items-center border border-gray-300 rounded-lg p-1">
             <label className="w-24 pl-4 text-sm font-bold text-gray-700">Name :</label>
             <input

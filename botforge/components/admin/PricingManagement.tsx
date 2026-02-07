@@ -14,6 +14,7 @@ interface Subscription {
   subscription_id: number;
   name: string;
   price: number;
+  staff_user_limit: number;
   status: number;
   description: string;
   features: SubscriptionFeature[];
@@ -32,6 +33,7 @@ export const PricingManagement: React.FC = () => {
   // Form State
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
+  const [staffUserLimit, setStaffUserLimit] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState(0);
 
@@ -73,12 +75,14 @@ export const PricingManagement: React.FC = () => {
       setEditingSub(sub);
       setName(sub.name);
       setPrice(sub.price.toString());
+      setStaffUserLimit((sub.staff_user_limit ?? '').toString());
       setDescription(sub.description || '');
       setStatus(sub.status);
     } else {
       setEditingSub(null);
       setName('');
       setPrice('');
+      setStaffUserLimit('');
       setDescription('');
       setStatus(0);
     }
@@ -86,15 +90,17 @@ export const PricingManagement: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!name || !price) return;
+    if (!name || !price || !staffUserLimit) return;
     const priceVal = parseFloat(price);
-    if (isNaN(priceVal)) return;
+    const staffLimitVal = parseInt(staffUserLimit, 10);
+    if (isNaN(priceVal) || isNaN(staffLimitVal) || staffLimitVal < 1) return;
 
     try {
       if (editingSub) {
         await sysAdminService.updateSubscription(editingSub.subscription_id, {
           name,
           price: priceVal,
+          staff_user_limit: staffLimitVal,
           description,
           status
         });
@@ -102,6 +108,7 @@ export const PricingManagement: React.FC = () => {
         await sysAdminService.createSubscription({
           name,
           price: priceVal,
+          staff_user_limit: staffLimitVal,
           description,
           status
         });
@@ -174,6 +181,7 @@ export const PricingManagement: React.FC = () => {
               <tr className="bg-gray-50 border-b border-gray-200">
                 <th className="p-4 text-sm font-bold text-gray-600 uppercase">Name</th>
                 <th className="p-4 text-sm font-bold text-gray-600 uppercase">Price</th>
+                <th className="p-4 text-sm font-bold text-gray-600 uppercase">Staff Limit</th>
                 <th className="p-4 text-sm font-bold text-gray-600 uppercase">Features</th>
                 <th className="p-4 text-sm font-bold text-gray-600 uppercase">Status</th>
                 <th className="p-4 text-sm font-bold text-gray-600 uppercase">Actions</th>
@@ -181,12 +189,13 @@ export const PricingManagement: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {subscriptions.length === 0 ? (
-                <tr><td colSpan={5} className="p-4 text-center text-gray-500">No subscriptions found.</td></tr>
+                <tr><td colSpan={6} className="p-4 text-center text-gray-500">No subscriptions found.</td></tr>
               ) : (
                 subscriptions.map(s => (
                   <tr key={s.subscription_id} className="hover:bg-gray-50 transition-colors">
                     <td className="p-4 font-bold text-gray-800">{s.name}</td>
                     <td className="p-4 font-bold text-gray-600">${s.price}</td>
+                    <td className="p-4 font-medium text-gray-600">{s.staff_user_limit}</td>
                     <td className="p-4 font-medium text-gray-600">
                       <div className="flex items-center gap-2">
                         <span>{s.features.length} items</span>
@@ -231,6 +240,10 @@ export const PricingManagement: React.FC = () => {
               <div>
                 <label className="block text-xs font-bold mb-2 text-gray-700 uppercase">Price</label>
                 <input value={price} onChange={e => setPrice(e.target.value)} className="w-1/2 bg-blue-50 border border-blue-200 rounded p-2.5 outline-none" placeholder="0.00" type="number" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold mb-2 text-gray-700 uppercase">Staff User Limit</label>
+                <input value={staffUserLimit} onChange={e => setStaffUserLimit(e.target.value)} className="w-1/2 bg-blue-50 border border-blue-200 rounded p-2.5 outline-none" placeholder="e.g. 10" type="number" min={1} />
               </div>
               <div>
                 <label className="block text-xs font-bold mb-2 text-gray-700 uppercase">Status</label>

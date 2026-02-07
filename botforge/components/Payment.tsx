@@ -25,7 +25,7 @@ export const Payment: React.FC<PaymentProps> = ({ onPaymentSuccess }) => {
           </div>
           <button className="w-full bg-blue-400 text-white font-medium py-2 px-4 rounded mb-4 text-sm">Select Plan</button>
           <ul className="text-xs text-gray-700 space-y-1 w-full">
-            <li>• 300 conversations/month</li>
+            <li>• Up to 3 staff users</li>
             <li>• Best for small teams or startups</li>
             <li>• Covers essential chatbot features</li>
           </ul>
@@ -41,7 +41,7 @@ export const Payment: React.FC<PaymentProps> = ({ onPaymentSuccess }) => {
           </div>
           <button className="w-full bg-gray-200 text-gray-500 font-medium py-2 px-4 rounded mb-4 text-sm cursor-default">Current Plan</button>
           <ul className="text-xs text-gray-700 space-y-1 w-full">
-            <li>• 1500 conversations/month</li>
+            <li>• Up to 10 staff users</li>
             <li>• Ideal for growing businesses</li>
             <li>• Includes enhanced analytics</li>
           </ul>
@@ -56,9 +56,9 @@ export const Payment: React.FC<PaymentProps> = ({ onPaymentSuccess }) => {
           </div>
           <button className="w-full bg-blue-400 text-white font-medium py-2 px-4 rounded mb-4 text-sm">Select Plan</button>
           <ul className="text-xs text-gray-700 space-y-1 w-full">
-            <li>• 5000 conversations/month</li>
+            <li>• Up to 25 staff users</li>
             <li>• Designed for large organizations</li>
-            <li>• Full access to premium & enterprise features</li>
+            <li>• Full access to premium and enterprise features</li>
           </ul>
         </div>
       </div>

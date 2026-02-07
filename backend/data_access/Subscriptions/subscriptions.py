@@ -8,13 +8,14 @@ class SubscriptionRepository:
     def get_active_subscriptions(self):
         """
         Returns active subscriptions ordered by price, then id.
-        [(subscription_id, name, price, description), ...]
+        [(subscription_id, name, price, staff_user_limit, description), ...]
         """
         return (
             db.session.query(
                 Subscription.subscription_id,
                 Subscription.name,
                 Subscription.price,
+                Subscription.staff_user_limit,
                 Subscription.description
             )
             .filter(Subscription.status == 0)
@@ -22,6 +23,7 @@ class SubscriptionRepository:
                 Subscription.price.asc(),
                 Subscription.subscription_id.asc()
             )
+            .limit(3)
             .all()
         )
 

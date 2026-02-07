@@ -42,6 +42,7 @@ export interface Testimonial {
 export interface PricingPlan {
   name: string;
   price: number;
+  staff_user_limit?: number;
   features: string[];
   recommended?: boolean;
 }

@@ -11,7 +11,6 @@ interface PricingPageProps {
 
 export const PricingPage: React.FC<PricingPageProps> = ({ user, onSuccess }) => {
   const navigate = useNavigate();
-  const [selectedSize, setSelectedSize] = useState('Small');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [plans, setPlans] = useState<any[]>([]);
@@ -118,6 +117,9 @@ export const PricingPage: React.FC<PricingPageProps> = ({ user, onSuccess }) => 
                 <span className="text-5xl font-light text-gray-900">${parseInt(plan.price)}</span>
                 <span className="text-gray-600 ml-2">monthly</span>
               </div>
+              {typeof plan.staff_user_limit === 'number' && (
+                <p className="text-sm text-gray-600 mb-6">Up to {plan.staff_user_limit} staff users</p>
+              )}
 
               <button
                 onClick={() => handleSubscribe(plan.id, plan.name)}

@@ -231,11 +231,11 @@ export const sysAdminService = {
         return api.get<any>('/api/sysadmin/subscriptions');
     },
 
-    async createSubscription(data: { name: string; price: number; description?: string; status: number }) {
+    async createSubscription(data: { name: string; price: number; staff_user_limit: number; description?: string; status: number }) {
         return api.post<any>('/api/sysadmin/subscriptions', data);
     },
 
-    async updateSubscription(subscriptionId: number, data: { name?: string; price?: number; description?: string; status?: number }) {
+    async updateSubscription(subscriptionId: number, data: { name?: string; price?: number; staff_user_limit?: number; description?: string; status?: number }) {
         return api.put<any>(`/api/sysadmin/subscriptions/${subscriptionId}`, data);
     },
 
@@ -272,6 +272,10 @@ export const feedbackService = {
 export const orgAdminService = {
     async listOrgUsers(organisationId: number) {
         return api.get<any>(`/api/org-admin/users?organisation_id=${organisationId}`);
+    },
+
+    async getStaffCapacity(organisationId: number) {
+        return api.get<any>(`/api/org-admin/staff-capacity?organisation_id=${organisationId}`);
     },
 
     async updateAdminProfile(data: { user_id: number; username?: string; email?: string }) {

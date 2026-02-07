@@ -37,6 +37,7 @@ CREATE TABLE subscription (
     subscription_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
     price NUMERIC(10,2) NOT NULL,
+    staff_user_limit INT NOT NULL DEFAULT 3 CHECK (staff_user_limit > 0),
     status SMALLINT NOT NULL DEFAULT 0, -- 0: active, 1: inactive
     description VARCHAR(255)
 );

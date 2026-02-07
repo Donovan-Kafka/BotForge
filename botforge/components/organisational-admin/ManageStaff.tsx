@@ -9,6 +9,14 @@ interface ManageStaffProps {
 
 export const ManageStaff: React.FC<ManageStaffProps> = ({ onBack, onCreateRole }) => {
     const [users, setUsers] = useState<any[]>([]);
+    const [staffCapacity, setStaffCapacity] = useState<{
+        subscription_name: string | null;
+        staff_limit: number | null;
+        active_staff_count: number;
+        pending_invitation_count: number;
+        remaining_invites: number;
+        message: string | null;
+    } | null>(null);
     const [roles, setRoles] = useState<any[]>([]);
     const [allPermissions, setAllPermissions] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -23,6 +31,23 @@ export const ManageStaff: React.FC<ManageStaffProps> = ({ onBack, onCreateRole }
         permission_ids: number[];
     } | null>(null);
     const [isUpdatingRole, setIsUpdatingRole] = useState(false);
+
+    const applyUsersPayload = (payload: any) => {
+        if (Array.isArray(payload)) {
+            setUsers(payload);
+            setStaffCapacity(null);
+            return;
+        }
+
+        if (payload && Array.isArray(payload.users)) {
+            setUsers(payload.users);
+            setStaffCapacity(payload.staff_capacity || null);
+            return;
+        }
+
+        setUsers([]);
+        setStaffCapacity(null);
+    };
 
     // Load data on mount
     useEffect(() => {
@@ -39,7 +64,7 @@ export const ManageStaff: React.FC<ManageStaffProps> = ({ onBack, onCreateRole }
                         orgRoleService.listRoles(userObj.organisation_id),
                         orgRoleService.listPermissions()
                     ]);
-                    if (Array.isArray(usersRes)) setUsers(usersRes);
+                    applyUsersPayload(usersRes);
                     if (Array.isArray(rolesRes)) setRoles(rolesRes);
                     if (Array.isArray(permsRes)) setAllPermissions(permsRes);
                 } catch (e) {
@@ -65,7 +90,7 @@ export const ManageStaff: React.FC<ManageStaffProps> = ({ onBack, onCreateRole }
                 orgRoleService.listRoles(currentUser.organisation_id)
             ]);
 
-            if (Array.isArray(usersRes)) setUsers(usersRes);
+            applyUsersPayload(usersRes);
             if (Array.isArray(rolesRes)) setRoles(rolesRes);
 
         } catch (e) {
@@ -78,12 +103,10 @@ export const ManageStaff: React.FC<ManageStaffProps> = ({ onBack, onCreateRole }
         try {
             const res = await orgAdminService.updateUserRole(userId, newRoleId);
             if (res.user_id) {
-                // Update local state
-                setUsers(users.map(u => 
-                    u.user_id === userId 
-                        ? { ...u, org_role_id: newRoleId, org_role_name: res.org_role_name } 
-                        : u
-                ));
+                if (currentUser?.organisation_id) {
+                    const usersRes = await orgAdminService.listOrgUsers(currentUser.organisation_id);
+                    applyUsersPayload(usersRes);
+                }
                 alert("User role updated!");
             }
         } catch (e) {
@@ -181,6 +204,8 @@ export const ManageStaff: React.FC<ManageStaffProps> = ({ onBack, onCreateRole }
                     emailError: res.email_error
                 });
                 setInviteEmail('');
+                const usersRes = await orgAdminService.listOrgUsers(currentUser.organisation_id);
+                applyUsersPayload(usersRes);
             } else {
                 alert("Error: " + res.error);
             }
@@ -382,6 +407,26 @@ export const ManageStaff: React.FC<ManageStaffProps> = ({ onBack, onCreateRole }
                 {/* VIEW STAFF SECTION */}
                 <div className="bg-white border border-gray-300 rounded-xl p-8 shadow-sm">
                     <h3 className="text-base font-bold text-gray-700 mb-4">View Staff</h3>
+                    {staffCapacity && (
+                        <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div className="text-sm font-bold text-blue-900">
+                                {staffCapacity.subscription_name
+                                    ? `${staffCapacity.subscription_name} Plan Staff Capacity`
+                                    : "Staff Capacity"}
+                            </div>
+                            {staffCapacity.staff_limit !== null ? (
+                                <div className="text-sm text-blue-800 mt-1">
+                                    {staffCapacity.active_staff_count} active staff + {staffCapacity.pending_invitation_count} pending invites out of {staffCapacity.staff_limit} seats.
+                                    {" "}
+                                    <span className="font-bold">{staffCapacity.remaining_invites} invite slot(s) left.</span>
+                                </div>
+                            ) : (
+                                <div className="text-sm text-blue-800 mt-1">
+                                    {staffCapacity.message || "Staff limit unavailable."}
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     <div className="space-y-4 mb-8">
                         {users.map((u) => (

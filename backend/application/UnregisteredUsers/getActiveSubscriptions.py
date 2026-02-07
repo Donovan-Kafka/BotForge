@@ -13,8 +13,9 @@ class GetActiveSubscriptions:
                     "id": sub_id,
                     "name": name,
                     "price": float(price),
+                    "staff_user_limit": staff_user_limit,
                     "description": description
                 }
-                for sub_id, name, price, description in rows
+                for sub_id, name, price, staff_user_limit, description in rows
             ]
         }

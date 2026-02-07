@@ -3,7 +3,7 @@ from flask import Blueprint, request, jsonify, Response, stream_with_context
 from flask_cors import cross_origin
 from datetime import datetime, timezone, timedelta
 from sqlalchemy.exc import IntegrityError
-from backend.models import Organisation, Chatbot, Personality
+from backend.models import Organisation, Chatbot, Personality, Subscription, AppUser, OrgRole, Invitation
 from backend.application.user_service import UserService
 from backend.application.user_profile_service import UserProfileService
 from backend.application.notification_service import NotificationService
@@ -108,6 +108,82 @@ def _validate_chatbot_payload(data: dict) -> str | None:
 
     return None
 
+
+def _build_staff_capacity(organisation_id: int) -> dict:
+    org = Organisation.query.get(organisation_id)
+    if not org:
+        return {
+            "subscription_name": None,
+            "staff_limit": None,
+            "active_staff_count": 0,
+            "pending_invitation_count": 0,
+            "remaining_invites": 0,
+            "message": "Organisation not found."
+        }
+
+    if not org.subscription_id:
+        return {
+            "subscription_name": None,
+            "staff_limit": None,
+            "active_staff_count": 0,
+            "pending_invitation_count": 0,
+            "remaining_invites": 0,
+            "message": "No subscription plan assigned."
+        }
+
+    subscription = Subscription.query.get(org.subscription_id)
+    if not subscription:
+        return {
+            "subscription_name": None,
+            "staff_limit": None,
+            "active_staff_count": 0,
+            "pending_invitation_count": 0,
+            "remaining_invites": 0,
+            "message": "Subscription plan not found."
+        }
+
+    staff_limit = int(subscription.staff_user_limit or 0)
+    if staff_limit < 1:
+        return {
+            "subscription_name": subscription.name,
+            "staff_limit": None,
+            "active_staff_count": 0,
+            "pending_invitation_count": 0,
+            "remaining_invites": 0,
+            "message": "Subscription plan has no valid staff limit."
+        }
+
+    active_staff_count = (
+        db.session.query(AppUser.user_id)
+        .join(OrgRole, AppUser.org_role_id == OrgRole.org_role_id)
+        .filter(
+            AppUser.organisation_id == organisation_id,
+            AppUser.status.is_(True),
+            OrgRole.name == "STAFF",
+        )
+        .count()
+    )
+
+    pending_invitation_count = (
+        Invitation.query
+        .filter_by(organisation_id=organisation_id, status=0)
+        .count()
+    )
+
+    remaining_invites = max(
+        staff_limit - active_staff_count - pending_invitation_count,
+        0
+    )
+
+    return {
+        "subscription_name": subscription.name,
+        "staff_limit": staff_limit,
+        "active_staff_count": active_staff_count,
+        "pending_invitation_count": pending_invitation_count,
+        "remaining_invites": remaining_invites,
+        "message": None
+    }
+
 # ORG ADMIN: users
 
 @org_admin_bp.get("/users")
@@ -118,7 +194,7 @@ def list_org_users():
 
     users = user_service.get_users_by_organisation(organisation_id)
 
-    return jsonify([
+    user_rows = [
         {
             "user_id": u.user_id,
             "username": u.username,
@@ -128,7 +204,25 @@ def list_org_users():
             "org_role_name": u.org_role.name if u.org_role else None
         }
         for u in users
-    ]), 200
+    ]
+
+    return jsonify({
+        "ok": True,
+        "users": user_rows,
+        "staff_capacity": _build_staff_capacity(organisation_id),
+    }), 200
+
+
+@org_admin_bp.get("/staff-capacity")
+def get_staff_capacity():
+    organisation_id = request.args.get("organisation_id", type=int)
+    if not organisation_id:
+        return {"error": "organisation_id is required"}, 400
+
+    return jsonify({
+        "ok": True,
+        "staff_capacity": _build_staff_capacity(organisation_id),
+    }), 200
 
 
 @org_admin_bp.put("/users/<int:user_id>/role")

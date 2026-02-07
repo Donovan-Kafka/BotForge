@@ -2,7 +2,7 @@ import secrets
 import os
 from sqlalchemy.exc import IntegrityError
 from backend import db
-from backend.models import Invitation, AppUser, OrgRole
+from backend.models import Invitation, AppUser, OrgRole, Organisation, Subscription
 
 STATUS_PENDING = 0
 STATUS_ACCEPTED = 1
@@ -13,6 +13,73 @@ def _new_token() -> str:
     
     return secrets.token_urlsafe(32)
 
+
+def _get_staff_capacity(organisation_id: int):
+    org = Organisation.query.get(organisation_id)
+    if not org:
+        return None, "Organisation not found."
+
+    if not org.subscription_id:
+        return None, "Your organisation must choose a subscription plan before inviting staff."
+
+    subscription = Subscription.query.get(org.subscription_id)
+    if not subscription:
+        return None, "Assigned subscription plan was not found."
+
+    if subscription.staff_user_limit is None or int(subscription.staff_user_limit) < 1:
+        return None, "Assigned subscription plan is missing a valid staff user limit."
+
+    return subscription, None
+
+
+def _count_active_staff_users(organisation_id: int) -> int:
+    return (
+        db.session.query(AppUser.user_id)
+        .join(OrgRole, AppUser.org_role_id == OrgRole.org_role_id)
+        .filter(
+            AppUser.organisation_id == organisation_id,
+            AppUser.status.is_(True),
+            OrgRole.name == "STAFF",
+        )
+        .count()
+    )
+
+
+def _count_pending_staff_invitations(organisation_id: int) -> int:
+    return (
+        Invitation.query
+        .filter_by(
+            organisation_id=organisation_id,
+            status=STATUS_PENDING
+        )
+        .count()
+    )
+
+
+def _check_staff_limit_not_exceeded(organisation_id: int, reserve_pending_invites: bool = False):
+    subscription, error = _get_staff_capacity(organisation_id)
+    if error:
+        return False, error
+
+    current_staff_count = _count_active_staff_users(organisation_id)
+    pending_invites = _count_pending_staff_invitations(organisation_id) if reserve_pending_invites else 0
+    used_seats = current_staff_count + pending_invites
+    limit = int(subscription.staff_user_limit)
+
+    if used_seats >= limit:
+        if reserve_pending_invites:
+            return False, (
+                f"Staff user limit reached for plan '{subscription.name}'. "
+                f"Active staff: {current_staff_count}, Pending invites: {pending_invites}, "
+                f"Limit: {limit}. Please upgrade the subscription or revoke pending invites."
+            )
+        return False, (
+            f"Staff user limit reached for plan '{subscription.name}'. "
+            f"Current: {current_staff_count}, Limit: {limit}. Please upgrade the subscription."
+        )
+
+    return True, None
+
 def create_invitation(payload: dict, notification_service) -> dict:
     email = (payload.get("email") or "").strip().lower()
     organisation_id = payload.get("organisation_id")
@@ -21,12 +88,25 @@ def create_invitation(payload: dict, notification_service) -> dict:
     if not email or not organisation_id or not invited_by_user_id:
         return {"ok": False, "error": "email, organisation_id, invited_by_user_id are required."}
 
+    try:
+        organisation_id = int(organisation_id)
+        invited_by_user_id = int(invited_by_user_id)
+    except (TypeError, ValueError):
+        return {"ok": False, "error": "organisation_id and invited_by_user_id must be integers."}
+
     inviter = AppUser.query.get(invited_by_user_id)
     if not inviter:
         return {"ok": False, "error": "Invited_by_user_id not found."}
 
     if AppUser.query.filter_by(email=email).first():
         return {"ok": False, "error": "This email already has an account."}
+
+    can_add_staff, staff_limit_error = _check_staff_limit_not_exceeded(
+        organisation_id,
+        reserve_pending_invites=True
+    )
+    if not can_add_staff:
+        return {"ok": False, "error": staff_limit_error}
 
     base_url = os.getenv("APP_BASE_URL", "http://localhost:5000")
 
@@ -143,6 +223,10 @@ def accept_invitation_and_create_operator(payload: dict, notification_service) -
 
     if not staff_role:
         return {"ok": False, "error": "STAFF role not found for organisation."}
+
+    can_add_staff, staff_limit_error = _check_staff_limit_not_exceeded(inv.organisation_id)
+    if not can_add_staff:
+        return {"ok": False, "error": staff_limit_error}
 
     user = AppUser(
         username=username,

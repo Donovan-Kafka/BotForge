@@ -891,6 +891,7 @@ def list_subscriptions():
                 "subscription_id": s.subscription_id,
                 "name": s.name,
                 "price": float(s.price) if s.price is not None else None,
+                "staff_user_limit": int(s.staff_user_limit) if s.staff_user_limit is not None else None,
                 "status": int(s.status) if s.status is not None else 0,
                 "description": s.description,
                 "features": features_by_sub.get(s.subscription_id, [])
@@ -992,6 +993,15 @@ def update_subscription(subscription_id):
             return jsonify({"ok": False, "error": "price must be >= 0."}), 400
         s.price = price_val
 
+    if "staff_user_limit" in payload:
+        try:
+            staff_user_limit = int(payload.get("staff_user_limit"))
+        except (TypeError, ValueError):
+            return jsonify({"ok": False, "error": "staff_user_limit must be a positive integer."}), 400
+        if staff_user_limit < 1:
+            return jsonify({"ok": False, "error": "staff_user_limit must be at least 1."}), 400
+        s.staff_user_limit = staff_user_limit
+
     if "status" in payload:
         try:
             status_val = int(payload.get("status"))
@@ -1010,6 +1020,7 @@ def update_subscription(subscription_id):
             "subscription_id": s.subscription_id,
             "name": s.name,
             "price": float(s.price) if s.price is not None else None,
+            "staff_user_limit": int(s.staff_user_limit) if s.staff_user_limit is not None else None,
             "status": int(s.status) if s.status is not None else 0,
             "description": s.description
         }

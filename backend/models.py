@@ -161,6 +161,7 @@ class Subscription(db.Model):
     subscription_id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
     price = db.Column(db.Numeric(10, 2), nullable=False)
+    staff_user_limit = db.Column(db.Integer, nullable=False, default=3)
     status = db.Column(db.SmallInteger, nullable=False, default=0)
     description = db.Column(db.String(255))
 
