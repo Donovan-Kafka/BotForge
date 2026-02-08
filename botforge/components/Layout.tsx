@@ -34,40 +34,42 @@ export const Layout: React.FC<LayoutProps> = ({
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-slate-50 font-sans text-slate-900 selection:bg-blue-100 selection:text-blue-700">
       {/* Header */}
-      <header className="border-b border-gray-100 sticky top-0 bg-white/95 backdrop-blur-sm z-50">
+      <header className="fixed top-4 left-4 right-4 md:top-6 md:left-6 md:right-6 rounded-2xl border border-white/20 bg-white/70 backdrop-blur-xl shadow-sm z-50 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             {/* Logo */}
             <Link
-              className="flex items-center gap-2 cursor-pointer"
+              className="flex items-center gap-2 cursor-pointer group"
               to="/"
             >
-              <div className="bg-blue-600 p-1.5 rounded-lg">
+              <div className="bg-blue-600 p-1.5 rounded-xl shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform duration-300">
                 <Bot className="h-6 w-6 text-white" />
               </div>
-              <span className="text-xl font-bold text-gray-900">BotForge</span>
+              <span className="text-xl font-bold text-slate-900 tracking-tight">BotForge</span>
             </Link>
 
             {/* Desktop Nav */}
-            <nav className="hidden md:flex items-center space-x-8">
-              <span className="cursor-pointer hover:text-blue-600 text-gray-600 transition-colors" onClick={() => handleNavClick('features')}>Features</span>
-              <span className="cursor-pointer hover:text-blue-600 text-gray-600 transition-colors" onClick={() => handleNavClick('testimonials')}>Testimonials</span>
-              <Link className={navClass('/pricing')} to="/pricing">Pricing</Link>
-              <Link className={navClass('/faq')} to="/faq">FAQ</Link>
+            <nav className="hidden md:flex items-center gap-1">
+              <button className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-white/50 rounded-full transition-all" onClick={() => handleNavClick('features')}>Features</button>
+              <button className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-white/50 rounded-full transition-all" onClick={() => handleNavClick('testimonials')}>Testimonials</button>
+              <button className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-white/50 rounded-full transition-all" onClick={() => handleNavClick('pricing')}>Pricing</button>
+              <button className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-white/50 rounded-full transition-all" onClick={() => handleNavClick('faq')}>FAQ</button>
+
+              <div className="w-px h-6 bg-slate-200 mx-2"></div>
 
               {!isLoggedIn ? (
                 <Link
                   to="/login"
-                  className="text-gray-900 font-medium hover:text-blue-600"
+                  className="px-6 py-2.5 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-full shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5"
                 >
                   Login
                 </Link>
               ) : (
                 <button
                   onClick={onLogout}
-                  className="text-gray-900 font-medium hover:text-blue-600"
+                  className="px-6 py-2.5 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-full shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5"
                 >
                   Logout
                 </button>
@@ -76,8 +78,11 @@ export const Layout: React.FC<LayoutProps> = ({
 
             {/* Mobile Menu Button */}
             <div className="md:hidden">
-              <button onClick={() => setIsMenuOpen(!isMenuOpen)}>
-                {isMenuOpen ? <X className="h-6 w-6 text-gray-600" /> : <Menu className="h-6 w-6 text-gray-600" />}
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="p-2 text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+              >
+                {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
               </button>
             </div>
           </div>
@@ -85,30 +90,38 @@ export const Layout: React.FC<LayoutProps> = ({
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden border-t border-gray-100 bg-white py-4 px-4 space-y-4">
-            <div className="block py-2 text-gray-600" onClick={() => handleNavClick('features')}>Features</div>
-            <div className="block py-2 text-gray-600" onClick={() => handleNavClick('testimonials')}>Testimonials</div>
-            <Link className="block py-2 text-gray-600" to="/pricing" onClick={() => setIsMenuOpen(false)}>Pricing</Link>
-            <Link className="block py-2 text-gray-600" to="/faq" onClick={() => setIsMenuOpen(false)}>FAQ</Link>
-            <Link className="block py-2 font-medium text-blue-600" to="/login" onClick={() => setIsMenuOpen(false)}>Login</Link>
+          <div className="md:hidden border-t border-slate-100 bg-white/95 backdrop-blur-xl rounded-b-2xl py-4 px-4 space-y-2 absolute top-full left-0 right-0 mt-2 shadow-xl animate-in slide-in-from-top-4 fade-in duration-200">
+            <button className="block w-full text-left px-4 py-3 text-slate-600 hover:bg-slate-50 rounded-xl font-medium transition-colors" onClick={() => handleNavClick('features')}>Features</button>
+            <button className="block w-full text-left px-4 py-3 text-slate-600 hover:bg-slate-50 rounded-xl font-medium transition-colors" onClick={() => handleNavClick('testimonials')}>Testimonials</button>
+            <button className="block w-full text-left px-4 py-3 text-slate-600 hover:bg-slate-50 rounded-xl font-medium transition-colors" onClick={() => handleNavClick('pricing')}>Pricing</button>
+            <button className="block w-full text-left px-4 py-3 text-slate-600 hover:bg-slate-50 rounded-xl font-medium transition-colors" onClick={() => handleNavClick('faq')}>FAQ</button>
+            <div className="h-px bg-slate-100 my-2"></div>
+            <Link className="block w-full text-center py-3 font-semibold text-white bg-blue-600 rounded-xl shadow-md active:scale-95 transition-all" to="/login" onClick={() => setIsMenuOpen(false)}>Login</Link>
           </div>
         )}
       </header>
 
       {/* Main Content */}
-      <main className="flex-grow">
+      <main className="flex-grow pt-24 md:pt-28">
         {children}
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-50 border-t border-gray-200 mt-auto">
+      <footer className="bg-slate-900 text-white mt-auto border-t border-slate-800">
         <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center gap-2 mb-4 md:mb-0">
-              <Bot className="h-5 w-5 text-gray-400" />
-              <span className="text-gray-500 font-semibold">BotForge</span>
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-500/20">
+                <Bot className="h-5 w-5 text-white" />
+              </div>
+              <span className="text-lg font-bold tracking-tight text-slate-100">BotForge</span>
             </div>
-            <p className="text-gray-400 text-sm">© 2026 BotForge. All rights reserved.</p>
+            <div className="flex gap-8 text-sm text-slate-400">
+              <Link to="#" className="hover:text-blue-400 transition-colors">Privacy</Link>
+              <Link to="#" className="hover:text-blue-400 transition-colors">Terms</Link>
+              <Link to="#" className="hover:text-blue-400 transition-colors">Contact</Link>
+            </div>
+            <p className="text-slate-500 text-sm">© 2026 BotForge. All rights reserved.</p>
           </div>
         </div>
       </footer>
