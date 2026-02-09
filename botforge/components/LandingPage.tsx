@@ -136,11 +136,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ user }) => {
 
             {/* Hero Image Carousel */}
             <div className="relative mx-auto w-full max-w-[600px] lg:max-w-none">
-              <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-blue-900/40 border-4 border-white/10 bg-slate-900 aspect-[4/3]">
+              <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-blue-900/40 border-4 border-white/10 bg-slate-900">
                 <img
                   src={landingImages[currentImageIndex]?.image_url || "/landing-images/default.png"}
                   alt={landingImages[currentImageIndex]?.alt_text || "BotForge Dashboard"}
-                  className="w-full h-full object-cover transition-opacity duration-700 opacity-90 hover:opacity-100"
+                  className="w-full h-auto object-contain transition-opacity duration-700 opacity-90 hover:opacity-100"
                 />
               </div>
               {/* Decorative elements */}
