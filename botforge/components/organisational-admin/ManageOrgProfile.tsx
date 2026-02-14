@@ -553,7 +553,7 @@ export const ManageOrgProfile: React.FC<ManageOrgProfileProps> = ({ onBack }) =>
 
                             <div className="md:col-span-2">
                                 <TextArea
-                                    label="Specialties"
+                                    label="Menu"
                                     value={form.restaurant.specialties}
                                     onChange={(v) => setForm((p) => ({ ...p, restaurant: { ...p.restaurant, specialties: v } }))}
                                     rows={3}
