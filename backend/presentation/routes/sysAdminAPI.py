@@ -1359,3 +1359,72 @@ def change_sysadmin_password():
         return {"error": str(e)}, 400
 
     return {"message": "Password updated"}, 200
+
+@sysadmin_bp.get("/organisations")
+def list_organisations():
+    _, err = _require_sysadmin()
+    if err:
+        return err
+    
+    active_users = func.sum(case((AppUser.status.is_(True), 1), else_=0))
+
+    rows = (
+        db.session.query(
+            Organisation.organisation_id,
+            Organisation.name,
+            active_users.label("active_users"),
+        )
+        .outerjoin(
+            AppUser,
+            (AppUser.organisation_id == Organisation.organisation_id) &
+            (AppUser.system_role_id == 1)
+        )
+        .group_by(Organisation.organisation_id, Organisation.name)
+        .order_by(Organisation.organisation_id.asc())
+        .all()
+    )
+
+    organisations = []
+    for r in rows:
+        status = True if int(r.active_users or 0) > 0 else False
+        organisations.append({
+            "organisation_id": r.organisation_id,
+            "name": r.name,
+            "status": status
+        })
+
+    return jsonify({"ok": True, "organisations": organisations}), 200
+
+
+@sysadmin_bp.put("/organisations/<int:organisation_id>/status")
+def update_organisation_status(organisation_id):
+    _, err = _require_sysadmin()
+    if err:
+        return err
+    
+    payload = request.get_json(force=True) or {}
+    if "status" not in payload:
+        return jsonify({"ok": False, "error": "status is required."}), 400
+
+    org = Organisation.query.get(organisation_id)
+    if not org:
+        return jsonify({"ok": False, "error": "Organisation not found."}), 404
+    
+    new_status = bool(payload["status"])
+
+    # Update all org users
+    (
+        AppUser.query
+        .filter(AppUser.organisation_id == organisation_id)
+        .filter(AppUser.system_role_id == 1)
+        .update({"status": new_status}, synchronize_session=False)
+    )
+
+    db.session.commit()
+
+    return jsonify({
+        "ok": True,
+        "message": "Organisation access updated.",
+        "organisation_id": organisation_id,
+        "status": new_status
+    }), 200
