@@ -191,6 +191,14 @@ export const sysAdminService = {
         return api.get<any>('/api/sysadmin/users');
     },
 
+    async listOrganisations() {
+        return api.get<any>('/api/sysadmin/organisations');
+    },
+
+    async updateOrganisationStatus(organisationId: number, status: boolean) {
+        return api.put<any>(`/api/sysadmin/organisations/${organisationId}/status`, { status });
+    },
+
     async listOrgRoles(organisationId: number) {
         return api.get<any>(`/api/sysadmin/org-roles?organisation_id=${organisationId}`);
     },
@@ -259,7 +267,6 @@ export const sysAdminService = {
     async featureFeedback(feedbackId: number, isTestimonial: boolean) {
         return api.post<any>('/api/sysadmin/testimonials/feature', { feedback_id: feedbackId, is_testimonial: isTestimonial });
     }
-
 
 };
 

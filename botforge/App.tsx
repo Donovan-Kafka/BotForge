@@ -73,9 +73,9 @@ function AppContent({ user, setUser, handleLoginSuccess }: { user: User | null, 
       <TokenHandler />
       <Routes>
         <Route element={<LayoutWrapper isLoggedIn={!!user} onLogout={handleLogout} />}>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/pricing" element={<PricingPage user={user} />} />
-          <Route path="/faq" element={<FAQPage />} />
+          <Route path="/" element={<LandingPage user={user} />} />
+          {/* <Route path="/pricing" element={<PricingPage user={user} />} /> */}
+          {/* <Route path="/faq" element={<FAQPage />} /> */}
           {/* <Route path="/login" element={<Auth view={PageView.LOGIN} onLoginSuccess={(u) => {
             handleLoginSuccess(u);
 
@@ -149,10 +149,10 @@ function AppContent({ user, setUser, handleLoginSuccess }: { user: User | null, 
           element={
             user && user.system_role_id === 1
               ? (user.is_profile_complete ? (
-                  <Dashboard user={user} onLogout={handleLogout} onSystemAdminLogin={() => navigate('/system-admin')} />
-                ) : (
-                  <Navigate to="/create-profile" replace />
-                ))
+                <Dashboard user={user} onLogout={handleLogout} onSystemAdminLogin={() => navigate('/system-admin')} />
+              ) : (
+                <Navigate to="/create-profile" replace />
+              ))
               : <Navigate to="/login" replace />
           }
         />
@@ -166,40 +166,40 @@ function AppContent({ user, setUser, handleLoginSuccess }: { user: User | null, 
           element={
             user && user.system_role_id === 1
               ? (!user.is_profile_complete ? (
-                  <CreateCompanyProfile
-                    onSuccess={() => {
-                      if (!user) return;
+                <CreateCompanyProfile
+                  onSuccess={() => {
+                    if (!user) return;
 
-                      const updatedUser = { ...user, is_profile_complete: true };
-                      setUser(updatedUser);
-                      localStorage.setItem('user', JSON.stringify(updatedUser));
+                    const updatedUser = { ...user, is_profile_complete: true };
+                    setUser(updatedUser);
+                    localStorage.setItem('user', JSON.stringify(updatedUser));
 
-                      // redirect to subscription selection
-                      navigate('/dashboard?tab=subscription', { replace: true });
-                    }}
-                  />
-                ) : (
-                  <Navigate
-                    to={
-                      !user.subscription_id || user.subscription_id <= 0
-                        ? "/dashboard?tab=subscription"
-                        : "/dashboard"
-                    }
-                    replace
-                  />
-                ))
+                    // redirect to subscription selection
+                    navigate('/dashboard?tab=subscription', { replace: true });
+                  }}
+                />
+              ) : (
+                <Navigate
+                  to={
+                    !user.subscription_id || user.subscription_id <= 0
+                      ? "/dashboard?tab=subscription"
+                      : "/dashboard"
+                  }
+                  replace
+                />
+              ))
               : <Navigate to="/login" replace />
           }
         />
 
 
         <Route path="/chatPage" element={
-            user && user.system_role_id === 2 ? <ChatPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />
-        }/>
+          user && user.system_role_id === 2 ? <ChatPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />
+        } />
 
-        <Route path="/patron/register" element={ <PatronRegister />}/>
+        <Route path="/patron/register" element={<PatronRegister />} />
 
-        <Route path="/operator-signup" element={ <OperatorRegister />} />
+        <Route path="/operator-signup" element={<OperatorRegister />} />
 
 
         <Route path="*" element={<Navigate to="/" />} />

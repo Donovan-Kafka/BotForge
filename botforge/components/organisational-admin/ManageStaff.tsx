@@ -454,52 +454,52 @@ export const ManageStaff: React.FC<ManageStaffProps> = ({ onBack, onCreateRole }
 
                 {/* MANAGE ROLES SECTION */}
                 <div className="bg-white border border-gray-300 rounded-xl p-8 shadow-sm">
-                <h3 className="text-base font-bold text-gray-700 mb-4">Manage Roles</h3>
+                    <h3 className="text-base font-bold text-gray-700 mb-4">Manage Roles</h3>
 
-                <div className="space-y-4 mb-8">
-                    {roles.map((role) => {
-                    const isProtectedRole =
-                        role.name === "ORG_ADMIN" || role.name === "STAFF";
+                    <div className="space-y-4 mb-8">
+                        {roles.map((role) => {
+                            const isProtectedRole =
+                                role.name === "ORG_ADMIN" || role.name === "STAFF";
 
-                    return (
-                        <div
-                        key={role.id}
-                        className="border border-gray-300 rounded-lg p-4 flex flex-col sm:flex-row justify-between items-center"
-                        >
-                        <div className="text-sm text-gray-800 font-bold">
-                            Role: <span className="font-normal">{role.name}</span>
-                            {role.description && (
-                            <span className="text-gray-500 font-normal text-xs ml-2">
-                                - {role.description}
-                            </span>
-                            )}
-                        </div>
+                            return (
+                                <div
+                                    key={role.id}
+                                    className="border border-gray-300 rounded-lg p-4 flex flex-col sm:flex-row justify-between items-center"
+                                >
+                                    <div className="text-sm text-gray-800 font-bold">
+                                        Role: <span className="font-normal">{role.name}</span>
+                                        {role.description && (
+                                            <span className="text-gray-500 font-normal text-xs ml-2">
+                                                - {role.description}
+                                            </span>
+                                        )}
+                                    </div>
 
-                        <div className="flex gap-3">
-                            {/* Edit button (allowed for non-default roles) */}
-                            {!role.is_default && (
-                            <button
-                                onClick={() => handleEditClick(role)}
-                                className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-1.5 rounded text-sm font-bold transition-colors flex items-center gap-2"
-                            >
-                                <Edit size={16} /> Edit
-                            </button>
-                            )}
+                                    <div className="flex gap-3">
+                                        {/* Edit button (allowed for non-default roles) */}
+                                        {!role.is_default && !isProtectedRole && (
+                                            <button
+                                                onClick={() => handleEditClick(role)}
+                                                className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-1.5 rounded text-sm font-bold transition-colors flex items-center gap-2"
+                                            >
+                                                <Edit size={16} /> Edit
+                                            </button>
+                                        )}
 
-                            {/* Delete button (hide for ORG_ADMIN & STAFF) */}
-                            {!role.is_default && !isProtectedRole && (
-                            <button
-                                onClick={() => handleDeleteRole(role.id)}
-                                className="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-1.5 rounded text-sm font-bold transition-colors flex items-center gap-2"
-                            >
-                                <Trash2 size={16} /> Delete
-                            </button>
-                            )}
-                        </div>
-                        </div>
-                    );
-                    })}
-                </div>
+                                        {/* Delete button (hide for ORG_ADMIN & STAFF) */}
+                                        {!role.is_default && !isProtectedRole && (
+                                            <button
+                                                onClick={() => handleDeleteRole(role.id)}
+                                                className="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-1.5 rounded text-sm font-bold transition-colors flex items-center gap-2"
+                                            >
+                                                <Trash2 size={16} /> Delete
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
 
 
                     <div className="flex justify-center">
